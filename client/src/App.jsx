@@ -1,12 +1,15 @@
 import React from "react";
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import Landing from './pages/Landing';
 
 function App() {
   return (
-    <div className="App">
-      <h1 className="text-3xl font-bold underline">
-        Hello, Vite with React and Tailwind CSS!
-      </h1>
-    </div>
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<Landing />} />
+    
+    </Routes>
+    </BrowserRouter>
   );
 }
 
