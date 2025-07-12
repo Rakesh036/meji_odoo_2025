@@ -1,3 +1,10 @@
 // TODO
 1. setup backend
 2. create user, admin, swap, feedback modal
+
+
+
+
+
+
+Home page, Profile page
