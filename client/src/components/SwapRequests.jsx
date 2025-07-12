@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { fetchMySwapRequests } from '../apis/apiCalls';
+import { fetchMySwapRequests, acceptSwapRequest, rejectSwapRequest, cancelSwapRequest } from '../apis/apiCalls';
 
 const SwapRequests = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -20,6 +20,7 @@ const SwapRequests = () => {
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [actionLoading, setActionLoading] = useState({});
 
   useEffect(() => {
     fetchRequests();
@@ -49,6 +50,67 @@ const SwapRequests = () => {
       setError(error.message || 'Failed to fetch requests');
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Action handlers for swap requests
+  const handleAcceptRequest = async (requestId) => {
+    try {
+      setActionLoading(prev => ({ ...prev, [requestId]: true }));
+      const response = await acceptSwapRequest(requestId);
+      
+      if (response.success) {
+        // Refresh the requests list
+        await fetchRequests();
+        alert('Request accepted successfully!');
+      } else {
+        alert(response.message || 'Failed to accept request');
+      }
+    } catch (error) {
+      console.error('Error accepting request:', error);
+      alert(error.message || 'Failed to accept request');
+    } finally {
+      setActionLoading(prev => ({ ...prev, [requestId]: false }));
+    }
+  };
+
+  const handleRejectRequest = async (requestId) => {
+    try {
+      setActionLoading(prev => ({ ...prev, [requestId]: true }));
+      const response = await rejectSwapRequest(requestId);
+      
+      if (response.success) {
+        // Refresh the requests list
+        await fetchRequests();
+        alert('Request rejected successfully!');
+      } else {
+        alert(response.message || 'Failed to reject request');
+      }
+    } catch (error) {
+      console.error('Error rejecting request:', error);
+      alert(error.message || 'Failed to reject request');
+    } finally {
+      setActionLoading(prev => ({ ...prev, [requestId]: false }));
+    }
+  };
+
+  const handleCancelRequest = async (requestId) => {
+    try {
+      setActionLoading(prev => ({ ...prev, [requestId]: true }));
+      const response = await cancelSwapRequest(requestId);
+      
+      if (response.success) {
+        // Refresh the requests list
+        await fetchRequests();
+        alert('Request cancelled successfully!');
+      } else {
+        alert(response.message || 'Failed to cancel request');
+      }
+    } catch (error) {
+      console.error('Error cancelling request:', error);
+      alert(error.message || 'Failed to cancel request');
+    } finally {
+      setActionLoading(prev => ({ ...prev, [requestId]: false }));
     }
   };
 
@@ -324,6 +386,20 @@ const SwapRequests = () => {
           </div>
         </div>
 
+        {/* Request Type Legend */}
+        <div className="bg-white rounded-lg shadow-sm p-4 mb-4">
+          <div className="flex flex-wrap gap-4 text-sm">
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
+              <span className="text-gray-700">Received Requests</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 bg-purple-500 rounded-full"></div>
+              <span className="text-gray-700">Sent Requests</span>
+            </div>
+          </div>
+        </div>
+
         {/* Results Count */}
         <div className="mb-4">
           <p className="text-sm sm:text-base text-gray-600">
@@ -331,158 +407,330 @@ const SwapRequests = () => {
           </p>
         </div>
 
-        {/* Requests List */}
-        <div className="space-y-3 sm:space-y-4">
-          {filteredRequests.length === 0 ? (
-            <div className="bg-white rounded-lg shadow-sm p-6 sm:p-8 text-center">
-              <div className="text-gray-400 mb-4">
-                <svg className="mx-auto h-8 w-8 sm:h-12 sm:w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
-              </div>
-              <h3 className="text-base sm:text-lg font-medium text-gray-900 mb-2">No requests found</h3>
-              <p className="text-sm sm:text-base text-gray-500">Try adjusting your search or filter criteria</p>
-            </div>
-          ) : (
-            filteredRequests.map((request) => {
-              // Get current user ID to determine which user is "other"
-              const userData = localStorage.getItem('user');
-              const currentUserId = userData ? JSON.parse(userData)._id : null;
-              
-              // Determine if this is a received request based on user ID comparison
-              const isReceived = request.requester._id !== currentUserId;
-              
-              // Determine which user is the "other" user (not the current user)
-              let otherUser, currentUser;
-              if (request.requester._id === currentUserId) {
-                // You are the requester (you sent the request)
-                otherUser = request.recipient;
-                currentUser = request.requester;
-              } else {
-                // You are the recipient (you received the request)
-                otherUser = request.requester;
-                currentUser = request.recipient;
-              }
-              
-              // Debug logging
-              console.log('Request debug:', {
-                requestId: request._id,
-                requestType: request.requestType,
-                isReceived,
-                currentUserId: currentUserId,
-                requesterId: request.requester._id,
-                recipientId: request.recipient._id,
-                requesterName: request.requester?.name,
-                recipientName: request.recipient?.name,
-                otherUserName: otherUser?.name,
-                currentUserName: currentUser?.name,
-                isCurrentUserRequester: request.requester._id === currentUserId
-              });
-              
-              // Safety check - if otherUser is undefined, skip this request
-              if (!otherUser) {
-                console.error('otherUser is undefined for request:', request);
-                return null;
-              }
-              
-              return (
-                <div key={request._id} className="bg-white rounded-lg shadow-sm p-4 sm:p-6 hover:shadow-md transition-shadow">
-                  <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-4">
-                    {/* User Info */}
-                    <div className="flex items-start space-x-3 sm:space-x-4 flex-1">
-                      {/* Profile Photo */}
-                      <div className="flex-shrink-0">
-                        {otherUser.profilePhoto ? (
-                          <img
-                            src={otherUser.profilePhoto}
-                            alt={otherUser.name}
-                            className="w-12 h-12 sm:w-16 sm:h-16 rounded-full object-cover border-2 border-gray-200"
-                            onError={(e) => {
-                              e.target.style.display = 'none';
-                              e.target.nextSibling.style.display = 'flex';
-                            }}
-                          />
-                        ) : null}
-                        <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-[#AB886D] flex items-center justify-center text-white font-medium text-sm sm:text-lg" style={{ display: otherUser.profilePhoto ? 'none' : 'flex' }}>
-                          {otherUser.name.charAt(0).toUpperCase()}
-                        </div>
-                      </div>
+        {/* Group requests by type */}
+        {(() => {
+          const receivedRequests = filteredRequests.filter(req => {
+            const userData = localStorage.getItem('user');
+            const currentUserId = userData ? JSON.parse(userData)._id : null;
+            return req.requester._id !== currentUserId;
+          });
+          
+          const sentRequests = filteredRequests.filter(req => {
+            const userData = localStorage.getItem('user');
+            const currentUserId = userData ? JSON.parse(userData)._id : null;
+            return req.requester._id === currentUserId;
+          });
 
-                      {/* User Details */}
-                      <div className="flex-1 min-w-0">
-                        <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-2">
-                          <h3 className="text-base sm:text-lg font-semibold text-gray-900 truncate">
-                            {otherUser.name}
-                          </h3>
-                          <div className="flex items-center gap-2">
-                            <Link
-                              to={`/profile/${otherUser._id}`}
-                              className="text-[#AB886D] hover:text-[#493628] text-xs sm:text-sm font-medium transition-colors"
-                            >
-                              View Profile
-                            </Link>
-                            <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                              isReceived ? 'bg-blue-100 text-blue-800' : 'bg-purple-100 text-purple-800'
-                            }`}>
-                              {isReceived ? 'Received' : 'Sent'}
-                            </span>
-                          </div>
-                        </div>
-                        
-                        {/* Location */}
-                        {otherUser.location && (
-                          <p className="text-xs sm:text-sm text-gray-600 mb-2">
-                            📍 {otherUser.location}
-                          </p>
-                        )}
-                        
-                        {/* Skills Exchange */}
-                        <div className="mb-2">
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
-                            <div>
-                              <p className="text-xs sm:text-sm text-gray-600 mb-1">Skill Requested:</p>
-                              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 border border-red-200">
-                                {request.skillRequested}
-                              </span>
+          return (
+            <div className="space-y-6">
+              {/* Received Requests Section */}
+              {receivedRequests.length > 0 && (
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                    <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
+                    Received Requests ({receivedRequests.length})
+                  </h3>
+                  <div className="space-y-3 sm:space-y-4">
+                    {receivedRequests.map((request) => {
+                      // Get current user ID to determine which user is "other"
+                      const userData = localStorage.getItem('user');
+                      const currentUserId = userData ? JSON.parse(userData)._id : null;
+                      
+                      // Determine which user is the "other" user (not the current user)
+                      let otherUser, currentUser;
+                      if (request.requester._id === currentUserId) {
+                        // You are the requester (you sent the request)
+                        otherUser = request.recipient;
+                        currentUser = request.requester;
+                      } else {
+                        // You are the recipient (you received the request)
+                        otherUser = request.requester;
+                        currentUser = request.recipient;
+                      }
+                      
+                      // Safety check - if otherUser is undefined, skip this request
+                      if (!otherUser) {
+                        console.error('otherUser is undefined for request:', request);
+                        return null;
+                      }
+                      
+                      return (
+                        <div key={request._id} className="bg-white rounded-lg shadow-sm p-4 sm:p-6 hover:shadow-md transition-shadow">
+                          <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-4">
+                            {/* User Info */}
+                            <div className="flex items-start space-x-3 sm:space-x-4 flex-1">
+                              {/* Profile Photo */}
+                              <div className="flex-shrink-0">
+                                {otherUser.profilePhoto ? (
+                                  <img
+                                    src={otherUser.profilePhoto}
+                                    alt={otherUser.name}
+                                    className="w-12 h-12 sm:w-16 sm:h-16 rounded-full object-cover border-2 border-gray-200"
+                                    onError={(e) => {
+                                      e.target.style.display = 'none';
+                                      e.target.nextSibling.style.display = 'flex';
+                                    }}
+                                  />
+                                ) : null}
+                                <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-[#AB886D] flex items-center justify-center text-white font-medium text-sm sm:text-lg" style={{ display: otherUser.profilePhoto ? 'none' : 'flex' }}>
+                                  {otherUser.name.charAt(0).toUpperCase()}
+                                </div>
+                              </div>
+
+                              {/* User Details */}
+                              <div className="flex-1 min-w-0">
+                                <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-2">
+                                  <h3 className="text-base sm:text-lg font-semibold text-gray-900 truncate">
+                                    {otherUser.name}
+                                  </h3>
+                                  <div className="flex items-center gap-2">
+                                    <Link
+                                      to={`/profile/${otherUser._id}`}
+                                      className="text-[#AB886D] hover:text-[#493628] text-xs sm:text-sm font-medium transition-colors"
+                                    >
+                                      View Profile
+                                    </Link>
+                                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                      Received
+                                    </span>
+                                  </div>
+                                </div>
+                                
+                                {/* Location */}
+                                {otherUser.location && (
+                                  <p className="text-xs sm:text-sm text-gray-600 mb-2">
+                                    📍 {otherUser.location}
+                                  </p>
+                                )}
+                                
+                                {/* Skills Exchange */}
+                                <div className="mb-2">
+                                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
+                                    <div>
+                                      <p className="text-xs sm:text-sm text-gray-600 mb-1">Skill Requested:</p>
+                                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 border border-red-200">
+                                        {request.skillRequested}
+                                      </span>
+                                    </div>
+                                    <div>
+                                      <p className="text-xs sm:text-sm text-gray-600 mb-1">Skill Offered:</p>
+                                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 border border-green-200">
+                                        {request.skillOffered}
+                                      </span>
+                                    </div>
+                                  </div>
+                                </div>
+
+                                {/* Message */}
+                                {request.message && (
+                                  <div className="mb-2">
+                                    <p className="text-xs sm:text-sm text-gray-600 mb-1">Message:</p>
+                                    <p className="text-xs sm:text-sm text-gray-800 bg-gray-50 p-2 rounded border">
+                                      "{request.message}"
+                                    </p>
+                                  </div>
+                                )}
+
+                                {/* Request Date */}
+                                <p className="text-xs text-gray-500">
+                                  Received: {formatDate(request.createdAt)}
+                                </p>
+                              </div>
                             </div>
-                            <div>
-                              <p className="text-xs sm:text-sm text-gray-600 mb-1">Skill Offered:</p>
-                              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 border border-green-200">
-                                {request.skillOffered}
-                              </span>
+
+                            {/* Status and Actions */}
+                            <div className="flex-shrink-0 lg:ml-4">
+                              <div className="flex flex-col items-end gap-2">
+                                <span className={`inline-flex items-center px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-medium border ${getStatusColor(request.status)}`}>
+                                  {getStatusText(request.status)}
+                                </span>
+                                
+                                {/* Action Buttons for Received Pending Requests */}
+                                {request.status === 'pending' && (
+                                  <div className="flex gap-1 sm:gap-2">
+                                    <button
+                                      onClick={() => handleAcceptRequest(request._id)}
+                                      disabled={actionLoading[request._id]}
+                                      className="px-2 sm:px-3 py-1 text-xs sm:text-sm bg-green-500 hover:bg-green-600 disabled:bg-green-300 text-white rounded transition-colors"
+                                    >
+                                      {actionLoading[request._id] ? 'Accepting...' : 'Accept'}
+                                    </button>
+                                    <button
+                                      onClick={() => handleRejectRequest(request._id)}
+                                      disabled={actionLoading[request._id]}
+                                      className="px-2 sm:px-3 py-1 text-xs sm:text-sm bg-red-500 hover:bg-red-600 disabled:bg-red-300 text-white rounded transition-colors"
+                                    >
+                                      {actionLoading[request._id] ? 'Rejecting...' : 'Reject'}
+                                    </button>
+                                  </div>
+                                )}
+                              </div>
                             </div>
                           </div>
                         </div>
-
-                        {/* Message */}
-                        {request.message && (
-                          <div className="mb-2">
-                            <p className="text-xs sm:text-sm text-gray-600 mb-1">Message:</p>
-                            <p className="text-xs sm:text-sm text-gray-800 bg-gray-50 p-2 rounded border">
-                              "{request.message}"
-                            </p>
-                          </div>
-                        )}
-
-                        {/* Request Date */}
-                        <p className="text-xs text-gray-500">
-                          {isReceived ? 'Received' : 'Sent'}: {formatDate(request.createdAt)}
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* Status */}
-                    <div className="flex-shrink-0 lg:ml-4">
-                      <span className={`inline-flex items-center px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-medium border ${getStatusColor(request.status)}`}>
-                        {getStatusText(request.status)}
-                      </span>
-                    </div>
+                      );
+                    }).filter(Boolean)}
                   </div>
                 </div>
-              );
-            }).filter(Boolean) // Remove any null requests
-          )}
-        </div>
+              )}
+
+              {/* Sent Requests Section */}
+              {sentRequests.length > 0 && (
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                    <div className="w-3 h-3 bg-purple-500 rounded-full"></div>
+                    Sent Requests ({sentRequests.length})
+                  </h3>
+                  <div className="space-y-3 sm:space-y-4">
+                    {sentRequests.map((request) => {
+                      // Get current user ID to determine which user is "other"
+                      const userData = localStorage.getItem('user');
+                      const currentUserId = userData ? JSON.parse(userData)._id : null;
+                      
+                      // Determine which user is the "other" user (not the current user)
+                      let otherUser, currentUser;
+                      if (request.requester._id === currentUserId) {
+                        // You are the requester (you sent the request)
+                        otherUser = request.recipient;
+                        currentUser = request.requester;
+                      } else {
+                        // You are the recipient (you received the request)
+                        otherUser = request.requester;
+                        currentUser = request.recipient;
+                      }
+                      
+                      // Safety check - if otherUser is undefined, skip this request
+                      if (!otherUser) {
+                        console.error('otherUser is undefined for request:', request);
+                        return null;
+                      }
+                      
+                      return (
+                        <div key={request._id} className="bg-white rounded-lg shadow-sm p-4 sm:p-6 hover:shadow-md transition-shadow">
+                          <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-4">
+                            {/* User Info */}
+                            <div className="flex items-start space-x-3 sm:space-x-4 flex-1">
+                              {/* Profile Photo */}
+                              <div className="flex-shrink-0">
+                                {otherUser.profilePhoto ? (
+                                  <img
+                                    src={otherUser.profilePhoto}
+                                    alt={otherUser.name}
+                                    className="w-12 h-12 sm:w-16 sm:h-16 rounded-full object-cover border-2 border-gray-200"
+                                    onError={(e) => {
+                                      e.target.style.display = 'none';
+                                      e.target.nextSibling.style.display = 'flex';
+                                    }}
+                                  />
+                                ) : null}
+                                <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-[#AB886D] flex items-center justify-center text-white font-medium text-sm sm:text-lg" style={{ display: otherUser.profilePhoto ? 'none' : 'flex' }}>
+                                  {otherUser.name.charAt(0).toUpperCase()}
+                                </div>
+                              </div>
+
+                              {/* User Details */}
+                              <div className="flex-1 min-w-0">
+                                <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-2">
+                                  <h3 className="text-base sm:text-lg font-semibold text-gray-900 truncate">
+                                    {otherUser.name}
+                                  </h3>
+                                  <div className="flex items-center gap-2">
+                                    <Link
+                                      to={`/profile/${otherUser._id}`}
+                                      className="text-[#AB886D] hover:text-[#493628] text-xs sm:text-sm font-medium transition-colors"
+                                    >
+                                      View Profile
+                                    </Link>
+                                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                                      Sent
+                                    </span>
+                                  </div>
+                                </div>
+                                
+                                {/* Location */}
+                                {otherUser.location && (
+                                  <p className="text-xs sm:text-sm text-gray-600 mb-2">
+                                    📍 {otherUser.location}
+                                  </p>
+                                )}
+                                
+                                {/* Skills Exchange */}
+                                <div className="mb-2">
+                                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
+                                    <div>
+                                      <p className="text-xs sm:text-sm text-gray-600 mb-1">Skill Requested:</p>
+                                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 border border-red-200">
+                                        {request.skillRequested}
+                                      </span>
+                                    </div>
+                                    <div>
+                                      <p className="text-xs sm:text-sm text-gray-600 mb-1">Skill Offered:</p>
+                                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 border border-green-200">
+                                        {request.skillOffered}
+                                      </span>
+                                    </div>
+                                  </div>
+                                </div>
+
+                                {/* Message */}
+                                {request.message && (
+                                  <div className="mb-2">
+                                    <p className="text-xs sm:text-sm text-gray-600 mb-1">Message:</p>
+                                    <p className="text-xs sm:text-sm text-gray-800 bg-gray-50 p-2 rounded border">
+                                      "{request.message}"
+                                    </p>
+                                  </div>
+                                )}
+
+                                {/* Request Date */}
+                                <p className="text-xs text-gray-500">
+                                  Sent: {formatDate(request.createdAt)}
+                                </p>
+                              </div>
+                            </div>
+
+                            {/* Status and Actions */}
+                            <div className="flex-shrink-0 lg:ml-4">
+                              <div className="flex flex-col items-end gap-2">
+                                <span className={`inline-flex items-center px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-medium border ${getStatusColor(request.status)}`}>
+                                  {getStatusText(request.status)}
+                                </span>
+                                
+                                {/* Cancel Button for Sent Pending Requests */}
+                                {request.status === 'pending' && (
+                                  <button
+                                    onClick={() => handleCancelRequest(request._id)}
+                                    disabled={actionLoading[request._id]}
+                                    className="px-2 sm:px-3 py-1 text-xs sm:text-sm bg-gray-500 hover:bg-gray-600 disabled:bg-gray-300 text-white rounded transition-colors"
+                                  >
+                                    {actionLoading[request._id] ? 'Cancelling...' : 'Cancel'}
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    }).filter(Boolean)}
+                  </div>
+                </div>
+              )}
+
+              {/* Empty State */}
+              {filteredRequests.length === 0 && (
+                <div className="bg-white rounded-lg shadow-sm p-6 sm:p-8 text-center">
+                  <div className="text-gray-400 mb-4">
+                    <svg className="mx-auto h-8 w-8 sm:h-12 sm:w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                  </div>
+                  <h3 className="text-base sm:text-lg font-medium text-gray-900 mb-2">No requests found</h3>
+                  <p className="text-sm sm:text-base text-gray-500">Try adjusting your search or filter criteria</p>
+                </div>
+              )}
+            </div>
+          );
+        })()}
       </div>
     </div>
   );

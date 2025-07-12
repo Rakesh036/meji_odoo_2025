@@ -231,7 +231,7 @@ export const cancelSwapRequest = async (requestId, userId) => {
     console.log('\n\n---- swapRequest.requester.toString(): ', swapRequest.requester._id.toString());
     console.log('userId: ', userId);
     if (!swapRequest.requester._id.equals(userId)) {
-      throw new Error('Unauthorized to cancel this request');
+      throw new Error('Unauthorized to cancel this request');
     }
 
     // Check if request is still pending
@@ -285,7 +285,7 @@ export const acceptSwapRequest = async (requestId, userId) => {
     }
 
     // Check if user is the recipient (only recipient can accept)
-    if (swapRequest.recipient.toString() !== userId) {
+    if (!swapRequest.recipient._id.equals(userId)) {
       throw new Error('Unauthorized to accept this request');
     }
 
@@ -340,7 +340,7 @@ export const rejectSwapRequest = async (requestId, userId) => {
     }
 
     // Check if user is the recipient (only recipient can reject)
-    if (swapRequest.recipient.toString() !== userId) {
+    if (!swapRequest.recipient._id.equals(userId)) {
       throw new Error('Unauthorized to reject this request');
     }
 

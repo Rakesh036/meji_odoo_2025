@@ -5,7 +5,7 @@ import {
   cancelSwapRequest, 
   acceptSwapRequest, 
   rejectSwapRequest 
-} from '../controllers/SwapRequestController.js';
+} from '../controllers/swapRequestController.js';
 import { isLoggedIn } from '../middleware/auth.js';
 
 const router = express.Router();

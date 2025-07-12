@@ -1,4 +1,4 @@
-# Skill Swap Platform
+# Connexus-Skill Buddy Platform
 
 A peer-to-peer learning platform where users can list their skills and request skill exchanges with others.
 
