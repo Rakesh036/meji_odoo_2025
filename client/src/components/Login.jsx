@@ -14,7 +14,7 @@ const Login = () => {
     email: '',
     petName: ''
   });
-  const [resetToken, setResetToken] = useState('');
+  const [showPasswordReset, setShowPasswordReset] = useState(false);
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [message, setMessage] = useState('');
@@ -65,33 +65,88 @@ const Login = () => {
     setError('');
 
     try {
+      console.log('Sending forgot password request with data:', forgotPasswordData);
       const response = await axios.post('http://localhost:5001/api/auth/forgot-password', forgotPasswordData);
-      setResetToken(response.data.resetToken);
-      setMessage('Reset token generated. Please check your email.');
+      console.log('Forgot password response:', response.data);
+      setMessage('Pet name verified successfully! Please enter your new password.');
+      setShowPasswordReset(true);
     } catch (error) {
-      setError(error.response?.data?.message || 'Forgot password request failed');
+      console.error('Forgot password error:', error);
+      console.error('Error response:', error.response?.data);
+      const errorMessage = error.response?.data?.message || 'Pet name verification failed';
+      setError(errorMessage);
+      
+      // If user not found, show additional help
+      if (errorMessage.includes('No account found')) {
+        setError(`${errorMessage} If you don't have an account, please register first.`);
+      }
     } finally {
       setLoading(false);
     }
   };
 
-  const handleResetPassword = async (e) => {
+  const handlePasswordReset = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError('');
 
+    // Validate passwords
+    if (newPassword !== confirmPassword) {
+      setError('Passwords do not match');
+      setLoading(false);
+      return;
+    }
+
+    if (newPassword.length < 6) {
+      setError('Password must be at least 6 characters long');
+      setLoading(false);
+      return;
+    }
+
     try {
-      await axios.post('http://localhost:5001/api/auth/reset-password', {
-        resetToken,
+      const resetData = {
+        email: forgotPasswordData.email,
+        petName: forgotPasswordData.petName,
         newPassword,
         confirmPassword
+      };
+      
+      console.log('Sending password reset request with data:', resetData);
+      console.log('Request data type:', typeof resetData);
+      console.log('Request data stringified:', JSON.stringify(resetData));
+      const response = await axios.post('http://localhost:5001/api/auth/reset-password', resetData, {
+        headers: {
+          'Content-Type': 'application/json'
+        }
       });
-      setMessage('Password reset successfully!');
-      setShowForgotPassword(false);
-      setResetToken('');
-      setNewPassword('');
-      setConfirmPassword('');
+      console.log('Password reset response:', response.data);
+      
+      setMessage('Password reset successfully! Logging you in...');
+      
+      // Auto-login after password reset
+      setTimeout(async () => {
+        try {
+          const loginResponse = await axios.post('http://localhost:5001/api/auth/login', {
+            email: forgotPasswordData.email,
+            password: newPassword
+          });
+          
+          localStorage.setItem('token', loginResponse.data.token);
+          localStorage.setItem('user', JSON.stringify(loginResponse.data.user));
+          
+          // Dispatch custom event to notify navbar
+          window.dispatchEvent(new Event('authChange'));
+          
+          navigate('/home');
+        } catch (loginError) {
+          console.error('Auto-login error:', loginError);
+          setError('Password reset successful but auto-login failed. Please login manually.');
+        }
+      }, 1500);
+      
     } catch (error) {
+      console.error('Password reset error:', error);
+      console.error('Error response:', error.response?.data);
       setError(error.response?.data?.message || 'Password reset failed');
     } finally {
       setLoading(false);
@@ -173,11 +228,16 @@ const Login = () => {
           <div className="space-y-6">
             <h3 className="text-xl font-semibold text-center text-[#493628]">Forgot Password</h3>
             
-            {!resetToken ? (
+            {!showPasswordReset ? (
               <form onSubmit={handleForgotPassword} className="space-y-6">
                 {error && (
                   <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
                     {error}
+                  </div>
+                )}
+                {message && (
+                  <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded">
+                    {message}
                   </div>
                 )}
                 
@@ -214,7 +274,7 @@ const Login = () => {
                   disabled={loading}
                   className="w-full bg-[#AB886D] text-white py-2 px-4 rounded-md hover:bg-[#493628] transition duration-200 disabled:opacity-50"
                 >
-                  {loading ? 'Sending...' : 'Send Reset Link'}
+                  {loading ? 'Verifying...' : 'Verify Pet Name'}
                 </button>
                 
                 <button
@@ -226,7 +286,7 @@ const Login = () => {
                 </button>
               </form>
             ) : (
-              <form onSubmit={handleResetPassword} className="space-y-6">
+              <form onSubmit={handlePasswordReset} className="space-y-6">
                 {error && (
                   <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
                     {error}
@@ -240,19 +300,6 @@ const Login = () => {
                 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Reset Token
-                  </label>
-                  <input
-                    type="text"
-                    value={resetToken}
-                    onChange={(e) => setResetToken(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#AB886D] focus:border-transparent"
-                    required
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
                     New Password
                   </label>
                   <input
@@ -261,6 +308,7 @@ const Login = () => {
                     onChange={(e) => setNewPassword(e.target.value)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#AB886D] focus:border-transparent"
                     required
+                    minLength={6}
                   />
                 </div>
                 
@@ -274,6 +322,7 @@ const Login = () => {
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#AB886D] focus:border-transparent"
                     required
+                    minLength={6}
                   />
                 </div>
                 
@@ -288,14 +337,14 @@ const Login = () => {
                 <button
                   type="button"
                   onClick={() => {
-                    setShowForgotPassword(false);
-                    setResetToken('');
+                    setShowPasswordReset(false);
                     setNewPassword('');
                     setConfirmPassword('');
+                    setMessage('');
                   }}
                   className="w-full text-[#AB886D] hover:text-[#493628] text-sm"
                 >
-                  Back to Login
+                  Back to Pet Name Verification
                 </button>
               </form>
             )}

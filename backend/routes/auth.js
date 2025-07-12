@@ -7,7 +7,8 @@ import {
   forgotPassword, 
   resetPassword, 
   getSkills,
-  updateProfile
+  updateProfile,
+  getUsers
 } from '../controllers/authController.js';
 
 const router = express.Router();
@@ -51,5 +52,6 @@ router.post('/forgot-password', forgotPassword);
 router.post('/reset-password', resetPassword);
 router.get('/skills', getSkills);
 router.put('/profile/:userId', upload.single('profilePhoto'), updateProfile);
+router.get('/users', getUsers);
 
 export default router; 

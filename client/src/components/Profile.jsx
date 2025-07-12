@@ -5,7 +5,6 @@ import axios from 'axios';
 const Profile = () => {
   const [user, setUser] = useState(null);
   const [formData, setFormData] = useState({
-    name: '',
     location: '',
     isPublic: true,
     availability: {
@@ -41,7 +40,6 @@ const Profile = () => {
     const userObj = JSON.parse(userData);
     setUser(userObj);
     setFormData({
-      name: userObj.name || '',
       location: userObj.location || '',
       isPublic: userObj.isPublic !== undefined ? userObj.isPublic : true,
       availability: userObj.availability || {
@@ -160,7 +158,6 @@ const Profile = () => {
 
     try {
       const formDataToSend = new FormData();
-      formDataToSend.append('name', formData.name);
       formDataToSend.append('location', formData.location);
       formDataToSend.append('isPublic', formData.isPublic);
       formDataToSend.append('availability', JSON.stringify(formData.availability));
@@ -190,9 +187,10 @@ const Profile = () => {
       setUser(response.data.user);
       setMessage('Profile updated successfully!');
       
+      // Redirect to home page after successful update
       setTimeout(() => {
-        setMessage('');
-      }, 3000);
+        navigate('/home');
+      }, 1500);
     } catch (error) {
       setError(error.response?.data?.message || 'Profile update failed');
     } finally {
@@ -223,35 +221,19 @@ const Profile = () => {
                 </div>
               )}
               
-              <div className="grid md:grid-cols-2 gap-6">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Full Name
-                  </label>
-                  <input
-                    type="text"
-                    name="name"
-                    value={formData.name}
-                    onChange={handleChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#AB886D] focus:border-transparent"
-                    required
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Location
-                  </label>
-                  <input
-                    type="text"
-                    name="location"
-                    value={formData.location}
-                    onChange={handleChange}
-                    placeholder="City, Country"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#AB886D] focus:border-transparent"
-                    required
-                  />
-                </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Location
+                </label>
+                <input
+                  type="text"
+                  name="location"
+                  value={formData.location}
+                  onChange={handleChange}
+                  placeholder="City, Country"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#AB886D] focus:border-transparent"
+                  required
+                />
               </div>
               
               <div>

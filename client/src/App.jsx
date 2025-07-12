@@ -6,6 +6,7 @@ import Login from './components/Login';
 import Register from './components/Register';
 import Home from './components/Home';
 import Profile from './components/Profile';
+import ProfileDetail from './components/ProfileDetail';
 import Debug from './components/Debug';
 
 function App() {
@@ -17,6 +18,7 @@ function App() {
         <Route path="/register" element={<Register />} />
         <Route path="/home" element={<Landing />} />
         <Route path="/profile" element={<Profile />} />
+        <Route path="/profile/:userId" element={<ProfileDetail />} />
         <Route path="/debug" element={<Debug />} />
         <Route path="/" element={<Landing />} />
       </Routes>

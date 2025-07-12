@@ -58,7 +58,7 @@ const Home = () => {
                   <div className="bg-gray-50 p-6 rounded-lg">
                     <h2 className="text-xl font-semibold text-[#493628] mb-4">Profile Photo</h2>
                     <img
-                      src={`http://localhost:5001/uploads/${user.profilePhoto}`}
+                      src={user.profilePhoto}
                       alt="Profile"
                       className="w-32 h-32 object-cover rounded-lg"
                       onError={(e) => {

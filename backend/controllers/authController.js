@@ -37,7 +37,10 @@ export const register = async (req, res) => {
     if (profilePhoto) {
       console.log('Registration - Profile photo received:', profilePhoto.originalname);
       console.log('Registration - Multer saved file as:', profilePhoto.filename);
-      profilePhotoPath = profilePhoto.filename;
+      // Construct the full URL for the profile photo
+      const baseUrl = `${req.protocol}://${req.get('host')}`;
+      profilePhotoPath = `${baseUrl}/uploads/${profilePhoto.filename}`;
+      console.log('Registration - Profile photo URL:', profilePhotoPath);
     }
 
     // Create user
@@ -122,46 +125,57 @@ export const login = async (req, res) => {
 
 export const forgotPassword = async (req, res) => {
   try {
+    console.log('Forgot password request body:', req.body);
     const { email, petName } = req.body;
 
     if (!email || !petName) {
+      console.log('Missing email or petName:', { email, petName });
       return res.status(400).json({ message: 'Email and pet name are required' });
     }
 
     // Find user
     const user = await User.findByEmail(email);
     if (!user) {
-      return res.status(400).json({ message: 'User not found' });
+      console.log('User not found for email:', email);
+      return res.status(400).json({ message: 'No account found with this email address. Please check your email or register a new account.' });
     }
+
+    console.log('Found user:', { email: user.email, petName: user.petName });
+    console.log('Comparing pet names:', { provided: petName, stored: user.petName });
 
     // Check pet name
     if (user.petName !== petName) {
-      return res.status(400).json({ message: 'Invalid pet name' });
+      console.log('Pet name mismatch');
+      return res.status(400).json({ message: 'The pet name you entered does not match our records. Please try again.' });
     }
 
-    // Generate reset token (in a real app, send this via email)
-    const resetToken = jwt.sign(
-      { userId: user.id, email: user.email },
-      JWT_SECRET,
-      { expiresIn: '1h' }
-    );
-
+    console.log('Pet name verified successfully');
     res.json({
-      message: 'Password reset instructions sent to your email',
-      resetToken // In production, send this via email instead
+      message: 'Pet name verified successfully'
     });
 
   } catch (error) {
     console.error('Forgot password error:', error);
-    res.status(500).json({ message: 'Password reset failed' });
+    res.status(500).json({ message: 'Pet name verification failed' });
   }
 };
 
 export const resetPassword = async (req, res) => {
   try {
-    const { resetToken, newPassword, confirmPassword } = req.body;
+    console.log('Reset password request headers:', req.headers);
+    console.log('Reset password request body:', req.body);
+    console.log('Reset password request body type:', typeof req.body);
+    const { email, petName, newPassword, confirmPassword } = req.body;
 
-    if (!resetToken || !newPassword || !confirmPassword) {
+    console.log('Extracted fields:', { email, petName, newPassword: newPassword ? '***' : undefined, confirmPassword: confirmPassword ? '***' : undefined });
+
+    if (!email || !petName || !newPassword || !confirmPassword) {
+      console.log('Missing fields:', { 
+        email: !!email, 
+        petName: !!petName, 
+        newPassword: !!newPassword, 
+        confirmPassword: !!confirmPassword 
+      });
       return res.status(400).json({ message: 'All fields are required' });
     }
 
@@ -173,12 +187,15 @@ export const resetPassword = async (req, res) => {
       return res.status(400).json({ message: 'Password must be at least 6 characters long' });
     }
 
-    // Verify reset token
-    const decoded = jwt.verify(resetToken, JWT_SECRET);
-    const user = await User.findUserById(decoded.userId);
-
+    // Find user by email
+    const user = await User.findByEmail(email);
     if (!user) {
-      return res.status(400).json({ message: 'Invalid reset token' });
+      return res.status(400).json({ message: 'User not found' });
+    }
+
+    // Verify pet name again for security
+    if (user.petName !== petName) {
+      return res.status(400).json({ message: 'Invalid pet name' });
     }
 
     // Hash new password
@@ -191,9 +208,6 @@ export const resetPassword = async (req, res) => {
 
   } catch (error) {
     console.error('Reset password error:', error);
-    if (error.name === 'JsonWebTokenError') {
-      return res.status(400).json({ message: 'Invalid reset token' });
-    }
     res.status(500).json({ message: 'Password reset failed' });
   }
 };
@@ -240,12 +254,14 @@ export const updateProfile = async (req, res) => {
     if (profilePhoto) {
       console.log('Profile Update - Profile photo received:', profilePhoto.originalname);
       console.log('Profile Update - Multer saved file as:', profilePhoto.filename);
-      profilePhotoPath = profilePhoto.filename;
+      // Construct the full URL for the profile photo
+      const baseUrl = `${req.protocol}://${req.get('host')}`;
+      profilePhotoPath = `${baseUrl}/uploads/${profilePhoto.filename}`;
+      console.log('Profile Update - Profile photo URL:', profilePhotoPath);
     }
 
     // Update user data
     const updateData = {
-      name,
       location,
       isPublic: isPublic === 'true' || isPublic === true,
       skillsOffered: skillsOffered || [],
@@ -273,3 +289,16 @@ export const updateProfile = async (req, res) => {
     });
   }
 }; 
+
+
+
+
+export const getUsers = async (req, res) => {
+  try {
+    const users = await User.find({});
+    res.json(users);
+  } catch (error) {
+    console.error('Get users error:', error);
+    res.status(500).json({ message: 'Failed to retrieve users' });
+  }
+};

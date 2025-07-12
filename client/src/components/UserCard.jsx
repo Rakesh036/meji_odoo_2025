@@ -1,4 +1,6 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
+
 export default function UserCard({ user, loggedIn }) {
   return (
     <div className="flex flex-col md:flex-row items-center bg-white shadow rounded p-4 gap-4 w-full">
@@ -9,7 +11,9 @@ export default function UserCard({ user, loggedIn }) {
       />
 
       <div className="flex-1">
-        <h2 className="text-xl font-semibold">{user.name}</h2>
+        <Link to={`/profile/${user.id}`} className="hover:text-[#AB886D] transition-colors">
+          <h2 className="text-xl font-semibold">{user.name}</h2>
+        </Link>
         <div className="mt-2">
           <p className="text-sm text-gray-600">Skills Offered:</p>
           <div className="flex flex-wrap gap-2 mt-1">

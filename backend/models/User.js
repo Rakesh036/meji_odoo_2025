@@ -44,7 +44,13 @@ const userSchema = new mongoose.Schema({
 userSchema.statics.deleteProfilePhoto = async function(userId) {
   const user = await this.findById(userId);
   if (user && user.profilePhoto) {
-    const photoPath = path.join(process.cwd(), 'uploads', user.profilePhoto);
+    // Extract filename from URL if it's a full URL
+    let filename = user.profilePhoto;
+    if (user.profilePhoto.includes('/uploads/')) {
+      filename = user.profilePhoto.split('/uploads/')[1];
+    }
+    
+    const photoPath = path.join(process.cwd(), 'uploads', filename);
     if (fs.existsSync(photoPath)) {
       fs.unlinkSync(photoPath);
     }
