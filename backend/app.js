@@ -9,7 +9,7 @@ import { createUploadsDir } from './utils/fileUtils.js';
 dotenv.config();
 
 const app = express();
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 5001;
 
 // Debug: Check if environment variables are loaded
 console.log('Environment check:');

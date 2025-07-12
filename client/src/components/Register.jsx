@@ -54,7 +54,7 @@ const Register = () => {
 
   const fetchSkills = async () => {
     try {
-      const response = await axios.get('http://localhost:5000/api/auth/skills');
+      const response = await axios.get('http://localhost:5001/api/auth/skills');
       setAvailableSkills(response.data.skills);
     } catch (error) {
       console.error('Error fetching skills:', error);
@@ -173,7 +173,7 @@ const Register = () => {
         formDataToSend.append('profilePhoto', profilePhoto);
       }
 
-      const response = await axios.post('http://localhost:5000/api/auth/register', formDataToSend, {
+      const response = await axios.post('http://localhost:5001/api/auth/register', formDataToSend, {
         headers: {
           'Content-Type': 'multipart/form-data'
         }

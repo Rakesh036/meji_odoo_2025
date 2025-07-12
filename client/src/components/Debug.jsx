@@ -16,13 +16,13 @@ const Debug = () => {
     });
 
     // Test uploads directory
-    axios.get('http://localhost:5000/api/test-uploads')
+    axios.get('http://localhost:5001/api/test-uploads')
       .then(response => {
         setUploadsTest(response.data);
         
         // If we have a user with a profile photo, test that specific file
         if (userData?.user?.profilePhoto) {
-          axios.get(`http://localhost:5000/api/test-uploads?filename=${userData.user.profilePhoto}`)
+          axios.get(`http://localhost:5001/api/test-uploads?filename=${userData.user.profilePhoto}`)
             .then(fileResponse => {
               setUploadsTest(prev => ({ ...prev, specificFile: fileResponse.data }));
             })
@@ -61,7 +61,7 @@ const Debug = () => {
             <div>
               <p>Profile photo filename: {userData.user.profilePhoto}</p>
               <img 
-                src={`http://localhost:5000/uploads/${userData.user.profilePhoto}`}
+                src={`http://localhost:5001/uploads/${userData.user.profilePhoto}`}
                 alt="Test"
                 className="w-32 h-32 object-cover rounded"
                 onError={(e) => {

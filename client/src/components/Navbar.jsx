@@ -128,7 +128,7 @@ const Navbar = () => {
               >
                 {user.profilePhoto ? (
                   <img
-                    src={`http://localhost:5000/uploads/${user.profilePhoto}`}
+                    src={`http://localhost:5001/uploads/${user.profilePhoto}`}
                     alt="Profile"
                     className="w-8 h-8 rounded-full object-cover"
                     onError={(e) => {

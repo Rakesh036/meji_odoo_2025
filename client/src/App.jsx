@@ -11,16 +11,15 @@ import Debug from './components/Debug';
 function App() {
   return (
     <BrowserRouter>
+      <Navbar />
       <Routes>
-        <Navbar />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
-        <Route path="/home" element={<Home />} />
+        <Route path="/home" element={<Landing />} />
         <Route path="/profile" element={<Profile />} />
         <Route path="/debug" element={<Debug />} />
         <Route path="/" element={<Landing />} />
-
-    </Routes>
+      </Routes>
     </BrowserRouter>
   );
 }

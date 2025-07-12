@@ -75,7 +75,7 @@ const Profile = () => {
 
   const fetchSkills = async () => {
     try {
-      const response = await axios.get('http://localhost:5000/api/auth/skills');
+      const response = await axios.get('http://localhost:5001/api/auth/skills');
       setAvailableSkills(response.data.skills);
     } catch (error) {
       console.error('Error fetching skills:', error);
@@ -178,7 +178,7 @@ const Profile = () => {
       }
 
       const token = localStorage.getItem('token');
-      const response = await axios.put(`http://localhost:5000/api/auth/profile/${user._id}`, formDataToSend, {
+      const response = await axios.put(`http://localhost:5001/api/auth/profile/${user._id}`, formDataToSend, {
         headers: {
           'Content-Type': 'multipart/form-data',
           'Authorization': `Bearer ${token}`

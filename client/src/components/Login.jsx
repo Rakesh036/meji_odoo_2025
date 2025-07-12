@@ -41,7 +41,7 @@ const Login = () => {
     setError('');
 
     try {
-      const response = await axios.post('http://localhost:5000/api/auth/login', formData);
+      const response = await axios.post('http://localhost:5001/api/auth/login', formData);
       localStorage.setItem('token', response.data.token);
       localStorage.setItem('user', JSON.stringify(response.data.user));
       
@@ -65,7 +65,7 @@ const Login = () => {
     setError('');
 
     try {
-      const response = await axios.post('http://localhost:5000/api/auth/forgot-password', forgotPasswordData);
+      const response = await axios.post('http://localhost:5001/api/auth/forgot-password', forgotPasswordData);
       setResetToken(response.data.resetToken);
       setMessage('Reset token generated. Please check your email.');
     } catch (error) {
@@ -81,7 +81,7 @@ const Login = () => {
     setError('');
 
     try {
-      await axios.post('http://localhost:5000/api/auth/reset-password', {
+      await axios.post('http://localhost:5001/api/auth/reset-password', {
         resetToken,
         newPassword,
         confirmPassword
