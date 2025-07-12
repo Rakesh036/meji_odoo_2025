@@ -1,5 +1,5 @@
 # Connexus-Skill Buddy Platform
-
+video link - https://drive.google.com/drive/folders/1Emcs3Mm5lMHkXtMBArhG0_6PnCeEGzqu?usp=drive_link 
 A peer-to-peer learning platform where users can list their skills and request skill exchanges with others.
 
 ## 🚀 Features
