@@ -14,9 +14,7 @@ export const getSkillMatches = async (userId) => {
       isBanned: false,
     });
 
-    const perfectMatches = [];
-    const twoMatches = [];
-    const oneMatch = [];
+    const data = [];
 
     allUsers.forEach((user) => {
       let matchCount = 0;
@@ -45,15 +43,18 @@ export const getSkillMatches = async (userId) => {
       );
       if (wantedMatch) matchCount++;
 
-      // Categorize match
-      if (matchCount === 3) {
-        perfectMatches.push(user);
-      } else if (matchCount === 2) {
-        twoMatches.push(user);
-      } else if (matchCount === 1) {
-        oneMatch.push(user);
+      // Add user to data array with match count
+      if (matchCount > 0) {
+        data.push({
+          ...user.toObject(),
+          matchCount: matchCount,
+          matchType: matchCount === 3 ? 'perfect' : matchCount === 2 ? 'good' : 'basic'
+        });
       }
     });
+
+    // Sort by match count (highest first)
+    data.sort((a, b) => b.matchCount - a.matchCount);
 
     return { 
       success: true,
@@ -66,10 +67,8 @@ export const getSkillMatches = async (userId) => {
         skillsWanted: currentUser.skillsWanted,
         availability: currentUser.availability
       },
-      perfectMatches, 
-      twoMatches, 
-      oneMatch,
-      totalMatches: perfectMatches.length + twoMatches.length + oneMatch.length
+      data: data,
+      totalMatches: data.length
     };
   } catch (error) {
     console.error("Skill matching error:", error);

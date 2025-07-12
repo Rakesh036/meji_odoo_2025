@@ -1,9 +1,11 @@
-const BaseUser = require('./BaseUser');
-const User = require('./User');
-const Admin = require('./Admin');
+import BaseUser from './BaseUser';
+import User from './User';
+import Admin from './Admin';
+import SwapRequest from './SwapRequest';
 
-module.exports = {
+export {
   BaseUser,
   User,
-  Admin
+  Admin,
+  SwapRequest
 }; 

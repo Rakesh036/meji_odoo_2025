@@ -1,8 +1,8 @@
 export const baseUserData = [
   {
     name: "John Doe",
-    email: "john.doe@example.com",
-    password: "password123",
+    email: "odoo@gmail.com",
+    password: "123456",
     location: "New York, NY",
     profilePhoto: null,
     petName: "Buddy",
