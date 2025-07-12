@@ -121,6 +121,13 @@ const Navbar = () => {
               Profile
             </Link>
 
+            <Link
+              to="/swap-requests"
+              className="text-gray-700 hover:text-[#AB886D] px-3 py-2 rounded-md text-sm font-medium transition-colors"
+            >
+              Swap Requests
+            </Link>
+
             <div className="relative" ref={dropdownRef}>
               <button
                 onClick={() => setShowDropdown(!showDropdown)}

@@ -8,6 +8,7 @@ import Home from './components/Home';
 import Profile from './components/Profile';
 import ProfileDetail from './components/ProfileDetail';
 import Debug from './components/Debug';
+import SwapRequests from './components/SwapRequests';
 
 function App() {
   return (
@@ -19,6 +20,7 @@ function App() {
         <Route path="/home" element={<Landing />} />
         <Route path="/profile" element={<Profile />} />
         <Route path="/profile/:userId" element={<ProfileDetail />} />
+        <Route path="/swap-requests" element={<SwapRequests />} />
         <Route path="/debug" element={<Debug />} />
         <Route path="/" element={<Landing />} />
       </Routes>
