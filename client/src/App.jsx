@@ -9,6 +9,7 @@ import Profile from './components/Profile';
 import ProfileDetail from './components/ProfileDetail';
 import Debug from './components/Debug';
 import SwapRequests from './components/SwapRequests';
+import AdminDashboard from './pages/AdminDashboard';
 
 function App() {
   return (
@@ -23,6 +24,7 @@ function App() {
         <Route path="/swap-requests" element={<SwapRequests />} />
         <Route path="/debug" element={<Debug />} />
         <Route path="/" element={<Landing />} />
+        <Route path="/admin" element={<AdminDashboard />} />
       </Routes>
     </BrowserRouter>
   );

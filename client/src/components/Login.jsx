@@ -47,13 +47,19 @@ const Login = () => {
       console.log('Login response:', response.data.user._id);
       localStorage.setItem('userId', response.data.user._id);
 
-      // Dispatch custom event to notify navbar
       window.dispatchEvent(new Event('authChange'));
       
       setMessage('Login successful!');
+      console.log('User data:', response.data.user.isAdmin);
+      if(response.data.user.availability
+.isAdmin) {
+        navigate('/admin');
+      }
+      else {
       setTimeout(() => {
         navigate('/home');
       }, 1000);
+      }
     } catch (error) {
       setError(error.response?.data?.message || 'Login failed');
     } finally {
@@ -92,7 +98,6 @@ const Login = () => {
     setLoading(true);
     setError('');
 
-    // Validate passwords
     if (newPassword !== confirmPassword) {
       setError('Passwords do not match');
       setLoading(false);
