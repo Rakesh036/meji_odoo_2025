@@ -44,7 +44,9 @@ const Login = () => {
       const response = await axios.post('http://localhost:5001/api/auth/login', formData);
       localStorage.setItem('token', response.data.token);
       localStorage.setItem('user', JSON.stringify(response.data.user));
-      
+      console.log('Login response:', response.data.user._id);
+      localStorage.setItem('userId', response.data.user._id);
+
       // Dispatch custom event to notify navbar
       window.dispatchEvent(new Event('authChange'));
       
