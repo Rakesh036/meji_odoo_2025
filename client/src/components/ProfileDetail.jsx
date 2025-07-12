@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useLocation } from 'react-router-dom';
+import { createSwapRequest } from '../apis/apiCalls';
 
 const ProfileDetail = () => {
   const { userId } = useParams();
@@ -9,24 +10,16 @@ const ProfileDetail = () => {
   const [selectedWantedSkill, setSelectedWantedSkill] = useState('');
   const [message, setMessage] = useState('');
   const [profileData, setProfileData] = useState(null);
+  const [currentUser, setCurrentUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [availableSkills] = useState([
-    'React', 'Next.js', 'JavaScript', 'TypeScript', 'Node.js', 'Express.js',
-    'Python', 'Django', 'Flask', 'Java', 'Spring Boot', 'C#', '.NET',
-    'PHP', 'Laravel', 'Ruby', 'Rails', 'Go', 'Rust', 'C++', 'C',
-    'SQL', 'MySQL', 'PostgreSQL', 'MongoDB', 'Redis', 'Kafka',
-    'Docker', 'Kubernetes', 'AWS', 'Azure', 'GCP', 'Firebase',
-    'HTML', 'CSS', 'Sass', 'Tailwind CSS', 'Bootstrap', 'Material-UI',
-    'Angular', 'Vue.js', 'Svelte', 'GraphQL', 'REST API', 'WebSocket',
-    'Git', 'GitHub', 'GitLab', 'CI/CD', 'Jenkins', 'Travis CI',
-    'Linux', 'Ubuntu', 'CentOS', 'Windows Server', 'Apache', 'Nginx',
-    'Machine Learning', 'Data Science', 'TensorFlow', 'PyTorch', 'Scikit-learn',
-    'Blockchain', 'Ethereum', 'Solidity', 'Web3.js', 'DApp Development'
-  ]);
+  const [submitting, setSubmitting] = useState(false);
 
   // Get user data from location state or fetch from backend
   useEffect(() => {
+    // Fetch current user data first
+    fetchCurrentUserData();
+    
     if (location.state?.userData) {
       // Use data passed from UserCard
       setProfileData(location.state.userData);
@@ -36,6 +29,34 @@ const ProfileDetail = () => {
       fetchUserData();
     }
   }, [userId, location.state]);
+
+  const fetchCurrentUserData = async () => {
+    try {
+      const userData = localStorage.getItem('user');
+      if (userData) {
+        const user = JSON.parse(userData);
+        setCurrentUser(user);
+      } else {
+        // If no user data in localStorage, fetch from backend
+        const token = localStorage.getItem('token');
+        if (token) {
+          const response = await fetch('http://localhost:5001/api/auth/me', {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            }
+          });
+          
+          if (response.ok) {
+            const data = await response.json();
+            setCurrentUser(data.user);
+          }
+        }
+      }
+    } catch (err) {
+      console.error('Error fetching current user data:', err);
+    }
+  };
 
   const fetchUserData = async () => {
     try {
@@ -62,7 +83,7 @@ const ProfileDetail = () => {
     }
   };
 
-  const handleRequestSubmit = (e) => {
+  const handleRequestSubmit = async (e) => {
     e.preventDefault();
     
     if (!selectedOfferedSkill || !selectedWantedSkill || !message.trim()) {
@@ -70,22 +91,33 @@ const ProfileDetail = () => {
       return;
     }
 
-    // For now, just log the request data
-    console.log('Skill Swap Request:', {
-      fromUser: 'Current User', // This would come from logged-in user
-      toUser: profileData.name,
-      offeredSkill: selectedOfferedSkill,
-      wantedSkill: selectedWantedSkill,
-      message: message
-    });
+    setSubmitting(true);
+    try {
+      const swapRequestData = {
+        recipientId: profileData._id || profileData.id,
+        skillOffered: selectedOfferedSkill,
+        skillRequested: selectedWantedSkill,
+        message: message
+      };
 
-    // Reset form and close modal
-    setSelectedOfferedSkill('');
-    setSelectedWantedSkill('');
-    setMessage('');
-    setShowRequestModal(false);
-    
-    alert('Request sent successfully!');
+      const response = await createSwapRequest(swapRequestData);
+      
+      if (response.success) {
+        alert('Swap request sent successfully!');
+        // Reset form and close modal
+        setSelectedOfferedSkill('');
+        setSelectedWantedSkill('');
+        setMessage('');
+        setShowRequestModal(false);
+      } else {
+        alert(response.message || 'Failed to send request');
+      }
+    } catch (error) {
+      console.error('Error sending swap request:', error);
+      alert(error.message || 'Failed to send swap request. Please try again.');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const handleModalClose = () => {
@@ -317,17 +349,24 @@ const ProfileDetail = () => {
                   required
                 >
                   <option value="">Select a skill you can offer</option>
-                  {availableSkills.map((skill) => (
-                    <option key={skill} value={skill}>
-                      {skill}
-                    </option>
-                  ))}
+                  {currentUser?.skillsOffered && currentUser.skillsOffered.length > 0 ? (
+                    currentUser.skillsOffered.map((skill) => (
+                      <option key={skill} value={skill}>
+                        {skill}
+                      </option>
+                    ))
+                  ) : (
+                    <option value="" disabled>No skills offered yet</option>
+                  )}
                 </select>
+                <p className="text-xs text-gray-500 mt-1">
+                  Note: You should select skills that you can actually offer to this user
+                </p>
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Choose one of their wanted skills
+                  Choose one of their offered skills
                 </label>
                 <select
                   value={selectedWantedSkill}
@@ -335,15 +374,15 @@ const ProfileDetail = () => {
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#AB886D] focus:border-transparent"
                   required
                 >
-                  <option value="">Select a skill they want to learn</option>
-                  {profileData.skillsWanted && profileData.skillsWanted.length > 0 ? (
-                    profileData.skillsWanted.map((skill) => (
+                  <option value="">Select a skill they can teach</option>
+                  {profileData?.skillsOffered && profileData.skillsOffered.length > 0 ? (
+                    profileData.skillsOffered.map((skill) => (
                       <option key={skill} value={skill}>
                         {skill}
                       </option>
                     ))
                   ) : (
-                    <option value="" disabled>No skills wanted</option>
+                    <option value="" disabled>No skills offered</option>
                   )}
                 </select>
               </div>
@@ -365,14 +404,16 @@ const ProfileDetail = () => {
               <div className="flex gap-3">
                 <button
                   type="submit"
-                  className="flex-1 bg-[#AB886D] text-white py-2 px-4 rounded-md hover:bg-[#493628] transition duration-200"
+                  disabled={submitting}
+                  className="flex-1 bg-[#AB886D] text-white py-2 px-4 rounded-md hover:bg-[#493628] transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Send Request
+                  {submitting ? 'Sending...' : 'Send Request'}
                 </button>
                 <button
                   type="button"
                   onClick={handleModalClose}
-                  className="flex-1 bg-gray-300 text-gray-700 py-2 px-4 rounded-md hover:bg-gray-400 transition duration-200"
+                  disabled={submitting}
+                  className="flex-1 bg-gray-300 text-gray-700 py-2 px-4 rounded-md hover:bg-gray-400 transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Cancel
                 </button>
