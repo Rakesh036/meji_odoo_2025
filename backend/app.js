@@ -3,6 +3,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import connectDB from './config/database.js';
 import authRoutes from './routes/auth.js';
+import homeRoutes from './routes/home.js';
 import { createUploadsDir } from './utils/fileUtils.js';
 
 // Load environment variables first
@@ -35,6 +36,11 @@ app.use('/uploads', express.static('uploads', {
     res.set('Access-Control-Allow-Origin', '*');
   }
 }));
+
+app.use((req, res, next) => {
+  console.log('Request received:', req.method, req.url);
+  next();
+});
 
 // Test route to check uploads directory
 app.get('/api/test-uploads', (req, res) => {
@@ -69,6 +75,7 @@ app.get('/api/test-uploads', (req, res) => {
 
 // Routes
 app.use('/api/auth', authRoutes);
+app.use('/api/home', homeRoutes);
 
 // Health check route
 app.get('/api/health', (req, res) => {

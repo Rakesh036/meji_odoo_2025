@@ -1,10 +1,10 @@
 import User from "../models/User.js";
 
-export const getSkillMatches = async (req, res) => {
+export const getSkillMatches = async (userId) => {
   try {
-    const currentUser = await User.findById(req.params.userId);
+    const currentUser = await User.findById(userId);
     if (!currentUser) {
-      return res.status(404).json({ message: "User not found" });
+      throw new Error("User not found");
     }
 
     // Get all public users except current user
@@ -55,9 +55,24 @@ export const getSkillMatches = async (req, res) => {
       }
     });
 
-    res.json({ perfectMatches, twoMatches, oneMatch });
+    return { 
+      success: true,
+      currentUser: {
+        id: currentUser._id,
+        name: currentUser.name,
+        email: currentUser.email,
+        location: currentUser.location,
+        skillsOffered: currentUser.skillsOffered,
+        skillsWanted: currentUser.skillsWanted,
+        availability: currentUser.availability
+      },
+      perfectMatches, 
+      twoMatches, 
+      oneMatch,
+      totalMatches: perfectMatches.length + twoMatches.length + oneMatch.length
+    };
   } catch (error) {
     console.error("Skill matching error:", error);
-    res.status(500).json({ message: "Server Error" });
+    throw error;
   }
 };
