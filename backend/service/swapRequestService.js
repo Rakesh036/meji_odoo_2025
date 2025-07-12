@@ -152,7 +152,21 @@ export const getMySwapRequests = async ({ userId, page = 1, limit = 10, status, 
     // Add request type (sent/received) to each request
     const requestsWithType = swapRequests.map(request => {
       const requestObj = request.toObject();
-      requestObj.requestType = request.requester.toString() === userId ? 'sent' : 'received';
+      const isSent = request.requester.toString() === userId;
+      requestObj.requestType = isSent ? 'sent' : 'received';
+      
+      // Debug logging
+      console.log('Request type determination:', {
+        requestId: request._id,
+        requesterId: request.requester.toString(),
+        recipientId: request.recipient.toString(),
+        userId: userId,
+        isSent,
+        requestType: requestObj.requestType,
+        requesterName: request.requester.name,
+        recipientName: request.recipient.name
+      });
+      
       return requestObj;
     });
 

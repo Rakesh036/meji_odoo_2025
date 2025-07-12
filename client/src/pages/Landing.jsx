@@ -86,13 +86,16 @@ const UserCard = ({ user, loggedIn }) => {
           {/* Action Button */}
           {loggedIn && (
             <button 
-              className="w-full sm:w-auto px-4 sm:px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors duration-200 group-hover:shadow-md text-sm sm:text-base"
+              className="w-full sm:w-auto px-4 sm:px-6 py-2 bg-[#AB886D] hover:bg-[#493628] text-white rounded-lg font-medium transition-colors duration-200 group-hover:shadow-md text-sm sm:text-base"
               onClick={(e) => {
                 e.stopPropagation();
-                // Handle connect action
+                // Navigate to detailed profile page
+                navigate(`/profile/${user._id}`, { 
+                  state: { userData: user } 
+                });
               }}
             >
-              Connect
+              Request
             </button>
           )}
         </div>
