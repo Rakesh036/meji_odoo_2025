@@ -2,10 +2,20 @@ import User from "../models/User.js";
 
 export const getSkillMatches = async (userId) => {
   try {
+    console.log('Getting skill matches for userId:', userId);
+    
     const currentUser = await User.findById(userId);
     if (!currentUser) {
       throw new Error("User not found");
     }
+
+    console.log('Current user found:', {
+      id: currentUser._id,
+      name: currentUser.name,
+      skillsOffered: currentUser.skillsOffered,
+      skillsWanted: currentUser.skillsWanted,
+      availability: currentUser.availability
+    });
 
     // Get all public users except current user
     const allUsers = await User.find({
@@ -14,12 +24,23 @@ export const getSkillMatches = async (userId) => {
       isBanned: false,
     });
 
-    const perfectMatches = [];
-    const twoMatches = [];
-    const oneMatch = [];
+    console.log('Found', allUsers.length, 'other users');
+
+    const data = [];
 
     allUsers.forEach((user) => {
       let matchCount = 0;
+
+      // Check if user has required fields
+      if (!user.availability || !currentUser.availability) {
+        console.log('Skipping user due to missing availability:', user._id);
+        return;
+      }
+
+      if (!user.skillsOffered || !user.skillsWanted || !currentUser.skillsOffered || !currentUser.skillsWanted) {
+        console.log('Skipping user due to missing skills:', user._id);
+        return;
+      }
 
       // 1. Availability match (check if any overlapping day is available)
       const availMatch = (
@@ -45,15 +66,20 @@ export const getSkillMatches = async (userId) => {
       );
       if (wantedMatch) matchCount++;
 
-      // Categorize match
-      if (matchCount === 3) {
-        perfectMatches.push(user);
-      } else if (matchCount === 2) {
-        twoMatches.push(user);
-      } else if (matchCount === 1) {
-        oneMatch.push(user);
+      // Add user to data array with match count
+      if (matchCount > 0) {
+        data.push({
+          ...user.toObject(),
+          matchCount: matchCount,
+          matchType: matchCount === 3 ? 'perfect' : matchCount === 2 ? 'good' : 'basic'
+        });
       }
     });
+
+    console.log('Processed matches:', data.length);
+
+    // Sort by match count (highest first)
+    data.sort((a, b) => b.matchCount - a.matchCount);
 
     return { 
       success: true,
@@ -66,10 +92,8 @@ export const getSkillMatches = async (userId) => {
         skillsWanted: currentUser.skillsWanted,
         availability: currentUser.availability
       },
-      perfectMatches, 
-      twoMatches, 
-      oneMatch,
-      totalMatches: perfectMatches.length + twoMatches.length + oneMatch.length
+      data: data,
+      totalMatches: data.length
     };
   } catch (error) {
     console.error("Skill matching error:", error);

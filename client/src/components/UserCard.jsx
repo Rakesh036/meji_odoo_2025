@@ -1,19 +1,31 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 export default function UserCard({ user, loggedIn }) {
+  const navigate = useNavigate();
+
+  const handleUserClick = () => {
+    // Pass user data via state to the profile detail page
+    navigate(`/profile/${user._id}`, { 
+      state: { userData: user } 
+    });
+  };
+
   return (
     <div className="flex flex-col md:flex-row items-center bg-white shadow rounded p-4 gap-4 w-full">
       <img
-        src={user.avatar}
+        src={user.profilePhoto || 'https://via.placeholder.com/96x96?text=User'}
         alt={user.name}
         className="w-24 h-24 rounded-full object-cover"
       />
 
       <div className="flex-1">
-        <Link to={`/profile/${user.id}`} className="hover:text-[#AB886D] transition-colors">
+        <button 
+          onClick={handleUserClick}
+          className="hover:text-[#AB886D] transition-colors text-left"
+        >
           <h2 className="text-xl font-semibold">{user.name}</h2>
-        </Link>
+        </button>
         <div className="mt-2">
           <p className="text-sm text-gray-600">Skills Offered:</p>
           <div className="flex flex-wrap gap-2 mt-1">

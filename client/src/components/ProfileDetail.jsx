@@ -1,12 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useLocation } from 'react-router-dom';
 
 const ProfileDetail = () => {
   const { userId } = useParams();
+  const location = useLocation();
   const [showRequestModal, setShowRequestModal] = useState(false);
   const [selectedOfferedSkill, setSelectedOfferedSkill] = useState('');
   const [selectedWantedSkill, setSelectedWantedSkill] = useState('');
   const [message, setMessage] = useState('');
+  const [profileData, setProfileData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   const [availableSkills] = useState([
     'React', 'Next.js', 'JavaScript', 'TypeScript', 'Node.js', 'Express.js',
     'Python', 'Django', 'Flask', 'Java', 'Spring Boot', 'C#', '.NET',
@@ -21,55 +25,42 @@ const ProfileDetail = () => {
     'Blockchain', 'Ethereum', 'Solidity', 'Web3.js', 'DApp Development'
   ]);
 
-  // Dummy data for the profile
-  const [profileData] = useState({
-    id: userId || '1',
-    name: 'Sarah Johnson',
-    email: 'sarah.johnson@example.com',
-    location: 'San Francisco, CA',
-    profilePhoto: 'https://images.unsplash.com/photo-1494790108755-2616b612b786?w=400&h=400&fit=crop&crop=face',
-    skillsOffered: ['React', 'JavaScript', 'Node.js', 'Python', 'Django'],
-    skillsWanted: ['Machine Learning', 'Data Science', 'AWS', 'Docker'],
-    rating: 4.8,
-    totalReviews: 24,
-    isPublic: true,
-    availability: {
-      weekdays: true,
-      weekends: false,
-      custom: true,
-      customText: 'Available evenings and weekends'
-    },
-    feedback: [
-      {
-        id: 1,
-        reviewer: 'Mike Chen',
-        rating: 5,
-        comment: 'Sarah is an excellent React developer. She helped me build a complex dashboard in just 2 weeks. Highly recommended!',
-        date: '2024-01-15'
-      },
-      {
-        id: 2,
-        reviewer: 'Emily Rodriguez',
-        rating: 4,
-        comment: 'Great communication and delivered exactly what I needed. Will definitely work with her again.',
-        date: '2024-01-10'
-      },
-      {
-        id: 3,
-        reviewer: 'David Kim',
-        rating: 5,
-        comment: 'Sarah is very knowledgeable about modern web development. She helped me optimize my application performance significantly.',
-        date: '2024-01-05'
-      },
-      {
-        id: 4,
-        reviewer: 'Lisa Wang',
-        rating: 4,
-        comment: 'Professional and reliable. She completed the project on time and within budget.',
-        date: '2023-12-28'
+  // Get user data from location state or fetch from backend
+  useEffect(() => {
+    if (location.state?.userData) {
+      // Use data passed from UserCard
+      setProfileData(location.state.userData);
+      setLoading(false);
+    } else {
+      // Fetch user data from backend if not passed via state
+      fetchUserData();
+    }
+  }, [userId, location.state]);
+
+  const fetchUserData = async () => {
+    try {
+      setLoading(true);
+      const token = localStorage.getItem('token');
+      const response = await fetch(`http://localhost:5001/api/users/${userId}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setProfileData(data);
+      } else {
+        setError('Failed to fetch user data');
       }
-    ]
-  });
+    } catch (err) {
+      console.error('Error fetching user data:', err);
+      setError('Failed to fetch user data');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleRequestSubmit = (e) => {
     e.preventDefault();
@@ -104,6 +95,49 @@ const ProfileDetail = () => {
     setMessage('');
   };
 
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-[#E4E0E1] to-[#D6C0B3] py-8">
+        <div className="container mx-auto px-4">
+          <div className="max-w-6xl mx-auto">
+            <div className="bg-white rounded-lg shadow-lg p-8 text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#AB886D] mx-auto"></div>
+              <p className="mt-4 text-gray-600">Loading profile...</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-[#E4E0E1] to-[#D6C0B3] py-8">
+        <div className="container mx-auto px-4">
+          <div className="max-w-6xl mx-auto">
+            <div className="bg-white rounded-lg shadow-lg p-8 text-center">
+              <p className="text-red-500">{error}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!profileData) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-[#E4E0E1] to-[#D6C0B3] py-8">
+        <div className="container mx-auto px-4">
+          <div className="max-w-6xl mx-auto">
+            <div className="bg-white rounded-lg shadow-lg p-8 text-center">
+              <p className="text-gray-600">User not found</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#E4E0E1] to-[#D6C0B3] py-8">
       <div className="container mx-auto px-4">
@@ -114,7 +148,7 @@ const ProfileDetail = () => {
               {/* Profile Photo */}
               <div className="flex-shrink-0">
                 <img
-                  src={profileData.profilePhoto}
+                  src={profileData.profilePhoto || 'https://via.placeholder.com/192x192?text=User'}
                   alt={profileData.name}
                   className="w-48 h-48 rounded-full object-cover border-4 border-[#AB886D]"
                 />
@@ -131,7 +165,7 @@ const ProfileDetail = () => {
                         {[...Array(5)].map((_, i) => (
                           <svg
                             key={i}
-                            className={`w-5 h-5 ${i < Math.floor(profileData.rating) ? 'text-yellow-400' : 'text-gray-300'}`}
+                            className={`w-5 h-5 ${i < Math.floor(profileData.rating || 0) ? 'text-yellow-400' : 'text-gray-300'}`}
                             fill="currentColor"
                             viewBox="0 0 20 20"
                           >
@@ -139,8 +173,8 @@ const ProfileDetail = () => {
                           </svg>
                         ))}
                       </div>
-                      <span className="text-lg font-semibold text-[#493628]">{profileData.rating}</span>
-                      <span className="text-gray-600">({profileData.totalReviews} reviews)</span>
+                      <span className="text-lg font-semibold text-[#493628]">{profileData.rating || 'No rating'}</span>
+                      <span className="text-gray-600">({profileData.totalReviews || 0} reviews)</span>
                     </div>
                   </div>
                   
@@ -156,16 +190,19 @@ const ProfileDetail = () => {
                 <div className="mb-6">
                   <h3 className="text-lg font-semibold text-[#493628] mb-3">Availability</h3>
                   <div className="flex flex-wrap gap-2">
-                    {profileData.availability.weekdays && (
+                    {profileData.availability?.weekdays && (
                       <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm">Weekdays</span>
                     )}
-                    {profileData.availability.weekends && (
+                    {profileData.availability?.weekends && (
                       <span className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm">Weekends</span>
                     )}
-                    {profileData.availability.custom && (
+                    {profileData.availability?.custom && (
                       <span className="bg-purple-100 text-purple-800 px-3 py-1 rounded-full text-sm">
-                        {profileData.availability.customText}
+                        {profileData.availability.customText || 'Custom availability'}
                       </span>
+                    )}
+                    {!profileData.availability?.weekdays && !profileData.availability?.weekends && !profileData.availability?.custom && (
+                      <span className="bg-gray-100 text-gray-800 px-3 py-1 rounded-full text-sm">Not specified</span>
                     )}
                   </div>
                 </div>
@@ -179,14 +216,18 @@ const ProfileDetail = () => {
             <div className="bg-white rounded-lg shadow-lg p-6">
               <h2 className="text-xl font-semibold text-[#493628] mb-4">Skills I Can Offer</h2>
               <div className="flex flex-wrap gap-2">
-                {profileData.skillsOffered.map((skill) => (
-                  <span
-                    key={skill}
-                    className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-medium"
-                  >
-                    {skill}
-                  </span>
-                ))}
+                {profileData.skillsOffered && profileData.skillsOffered.length > 0 ? (
+                  profileData.skillsOffered.map((skill) => (
+                    <span
+                      key={skill}
+                      className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-medium"
+                    >
+                      {skill}
+                    </span>
+                  ))
+                ) : (
+                  <span className="text-gray-500 text-sm">No skills offered</span>
+                )}
               </div>
             </div>
 
@@ -194,14 +235,18 @@ const ProfileDetail = () => {
             <div className="bg-white rounded-lg shadow-lg p-6">
               <h2 className="text-xl font-semibold text-[#493628] mb-4">Skills I Want to Learn</h2>
               <div className="flex flex-wrap gap-2">
-                {profileData.skillsWanted.map((skill) => (
-                  <span
-                    key={skill}
-                    className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium"
-                  >
-                    {skill}
-                  </span>
-                ))}
+                {profileData.skillsWanted && profileData.skillsWanted.length > 0 ? (
+                  profileData.skillsWanted.map((skill) => (
+                    <span
+                      key={skill}
+                      className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium"
+                    >
+                      {skill}
+                    </span>
+                  ))
+                ) : (
+                  <span className="text-gray-500 text-sm">No skills wanted</span>
+                )}
               </div>
             </div>
           </div>
@@ -210,29 +255,35 @@ const ProfileDetail = () => {
           <div className="bg-white rounded-lg shadow-lg p-8">
             <h2 className="text-2xl font-semibold text-[#493628] mb-6">Reviews & Feedback</h2>
             <div className="space-y-6">
-              {profileData.feedback.map((review) => (
-                <div key={review.id} className="border-b border-gray-200 pb-6 last:border-b-0">
-                  <div className="flex items-start justify-between mb-3">
-                    <div>
-                      <h4 className="font-semibold text-[#493628]">{review.reviewer}</h4>
-                      <div className="flex items-center gap-2 mt-1">
-                        {[...Array(5)].map((_, i) => (
-                          <svg
-                            key={i}
-                            className={`w-4 h-4 ${i < review.rating ? 'text-yellow-400' : 'text-gray-300'}`}
-                            fill="currentColor"
-                            viewBox="0 0 20 20"
-                          >
-                            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                          </svg>
-                        ))}
-                        <span className="text-sm text-gray-600">{review.date}</span>
+              {profileData.feedback && profileData.feedback.length > 0 ? (
+                profileData.feedback.map((review) => (
+                  <div key={review.id} className="border-b border-gray-200 pb-6 last:border-b-0">
+                    <div className="flex items-start justify-between mb-3">
+                      <div>
+                        <h4 className="font-semibold text-[#493628]">{review.reviewer}</h4>
+                        <div className="flex items-center gap-2 mt-1">
+                          {[...Array(5)].map((_, i) => (
+                            <svg
+                              key={i}
+                              className={`w-4 h-4 ${i < review.rating ? 'text-yellow-400' : 'text-gray-300'}`}
+                              fill="currentColor"
+                              viewBox="0 0 20 20"
+                            >
+                              <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                            </svg>
+                          ))}
+                          <span className="text-sm text-gray-600">{review.date}</span>
+                        </div>
                       </div>
                     </div>
+                    <p className="text-gray-700 leading-relaxed">{review.comment}</p>
                   </div>
-                  <p className="text-gray-700 leading-relaxed">{review.comment}</p>
+                ))
+              ) : (
+                <div className="text-center py-8">
+                  <p className="text-gray-500">No reviews yet</p>
                 </div>
-              ))}
+              )}
             </div>
           </div>
         </div>
@@ -285,11 +336,15 @@ const ProfileDetail = () => {
                   required
                 >
                   <option value="">Select a skill they want to learn</option>
-                  {profileData.skillsWanted.map((skill) => (
-                    <option key={skill} value={skill}>
-                      {skill}
-                    </option>
-                  ))}
+                  {profileData.skillsWanted && profileData.skillsWanted.length > 0 ? (
+                    profileData.skillsWanted.map((skill) => (
+                      <option key={skill} value={skill}>
+                        {skill}
+                      </option>
+                    ))
+                  ) : (
+                    <option value="" disabled>No skills wanted</option>
+                  )}
                 </select>
               </div>
 

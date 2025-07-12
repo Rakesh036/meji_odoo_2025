@@ -8,9 +8,7 @@ import {
   resetPassword, 
   getSkills,
   updateProfile,
-  getUsers,
-  getCurrentUser,
-  getMatches
+  getUsers
 } from '../controllers/authController.js';
 const router = express.Router();
 
@@ -54,7 +52,7 @@ router.post('/reset-password', resetPassword);
 router.get('/skills', getSkills);
 router.put('/profile/:userId', upload.single('profilePhoto'), updateProfile);
 router.get('/users', getUsers);
-router.get('/users/:userId/matches',getMatches);
+// router.get('/users/:userId/matches',getMatches);
 
 
 
