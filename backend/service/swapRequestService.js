@@ -214,7 +214,9 @@ export const cancelSwapRequest = async (requestId, userId) => {
     }
 
     // Check if user is the requester (only requester can cancel)
-    if (swapRequest.requester.toString() !== userId) {
+    console.log('\n\n---- swapRequest.requester.toString(): ', swapRequest.requester._id.toString());
+    console.log('userId: ', userId);
+    if (!swapRequest.requester._id.equals(userId)) {
       throw new Error('Unauthorized to cancel this request');
     }
 

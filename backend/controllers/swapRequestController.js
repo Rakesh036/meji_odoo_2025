@@ -6,11 +6,7 @@ import {
   rejectSwapRequest as rejectSwapRequestService
 } from '../service/swapRequestService.js';
 
-/**
- * Create a new swap request
- * @param {Object} req - Express request object (contains user data from middleware)
- * @param {Object} res - Express response object
- */
+
 export const createSwapRequest = async (req, res) => {
   try {
     // Get authenticated user data from middleware
@@ -78,11 +74,6 @@ export const createSwapRequest = async (req, res) => {
   }
 };
 
-/**
- * Get all swap requests for the authenticated user
- * @param {Object} req - Express request object (contains user data from middleware)
- * @param {Object} res - Express response object
- */
 export const getMySwapRequests = async (req, res) => {
   try {
     const userId = req.userId;
@@ -127,11 +118,6 @@ export const getMySwapRequests = async (req, res) => {
   }
 };
 
-/**
- * Cancel a swap request
- * @param {Object} req - Express request object (contains user data from middleware)
- * @param {Object} res - Express response object
- */
 export const cancelSwapRequest = async (req, res) => {
   try {
     const userId = req.userId;
@@ -183,11 +169,6 @@ export const cancelSwapRequest = async (req, res) => {
   }
 };
 
-/**
- * Accept a swap request
- * @param {Object} req - Express request object (contains user data from middleware)
- * @param {Object} res - Express response object
- */
 export const acceptSwapRequest = async (req, res) => {
   try {
     const userId = req.userId;
@@ -239,11 +220,6 @@ export const acceptSwapRequest = async (req, res) => {
   }
 };
 
-/**
- * Reject a swap request
- * @param {Object} req - Express request object (contains user data from middleware)
- * @param {Object} res - Express response object
- */
 export const rejectSwapRequest = async (req, res) => {
   try {
     const userId = req.userId;
