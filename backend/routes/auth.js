@@ -8,9 +8,10 @@ import {
   resetPassword, 
   getSkills,
   updateProfile,
-  getUsers
+  getUsers,
+  getCurrentUser,
+  getMatches
 } from '../controllers/authController.js';
-
 const router = express.Router();
 
 // Configure multer for file uploads
@@ -53,5 +54,8 @@ router.post('/reset-password', resetPassword);
 router.get('/skills', getSkills);
 router.put('/profile/:userId', upload.single('profilePhoto'), updateProfile);
 router.get('/users', getUsers);
+router.get('/users/:userId/matches',getMatches);
+
+
 
 export default router; 
