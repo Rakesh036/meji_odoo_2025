@@ -206,4 +206,171 @@ export const getMySwapRequests = async ({ userId, page = 1, limit = 10, status, 
     console.error('Get swap requests service error:', error);
     throw error;
   }
+};
+
+/**
+ * Cancel a swap request
+ * @param {string} requestId - ID of the swap request
+ * @param {string} userId - ID of the user attempting to cancel
+ * @returns {Object} Updated swap request
+ */
+export const cancelSwapRequest = async (requestId, userId) => {
+  try {
+    // Find the swap request
+    const swapRequest = await SwapRequest.findById(requestId)
+      .populate([
+        { path: 'requester', select: 'name email location profilePhoto' },
+        { path: 'recipient', select: 'name email location profilePhoto' }
+      ]);
+
+    if (!swapRequest) {
+      throw new Error('Swap request not found');
+    }
+
+    // Check if user is the requester (only requester can cancel)
+    console.log('\n\n---- swapRequest.requester.toString(): ', swapRequest.requester._id.toString());
+    console.log('userId: ', userId);
+    if (!swapRequest.requester._id.equals(userId)) {
+      throw new Error('Unauthorized to cancel this request');
+    }
+
+    // Check if request is still pending
+    if (swapRequest.status !== 'pending') {
+      throw new Error('Cannot cancel non-pending request');
+    }
+
+    // Update the status to cancelled
+    swapRequest.status = 'cancelled';
+    await swapRequest.save();
+
+    return {
+      success: true,
+      message: 'Swap request cancelled successfully',
+      swapRequest: {
+        id: swapRequest._id,
+        requester: swapRequest.requester,
+        recipient: swapRequest.recipient,
+        skillOffered: swapRequest.skillOffered,
+        skillRequested: swapRequest.skillRequested,
+        status: swapRequest.status,
+        message: swapRequest.message,
+        createdAt: swapRequest.createdAt,
+        updatedAt: swapRequest.updatedAt
+      }
+    };
+
+  } catch (error) {
+    console.error('Cancel swap request service error:', error);
+    throw error;
+  }
+};
+
+/**
+ * Accept a swap request
+ * @param {string} requestId - ID of the swap request
+ * @param {string} userId - ID of the user attempting to accept
+ * @returns {Object} Updated swap request
+ */
+export const acceptSwapRequest = async (requestId, userId) => {
+  try {
+    // Find the swap request
+    const swapRequest = await SwapRequest.findById(requestId)
+      .populate([
+        { path: 'requester', select: 'name email location profilePhoto' },
+        { path: 'recipient', select: 'name email location profilePhoto' }
+      ]);
+
+    if (!swapRequest) {
+      throw new Error('Swap request not found');
+    }
+
+    // Check if user is the recipient (only recipient can accept)
+    if (swapRequest.recipient.toString() !== userId) {
+      throw new Error('Unauthorized to accept this request');
+    }
+
+    // Check if request is still pending
+    if (swapRequest.status !== 'pending') {
+      throw new Error('Cannot accept non-pending request');
+    }
+
+    // Update the status to accepted
+    swapRequest.status = 'accepted';
+    await swapRequest.save();
+
+    return {
+      success: true,
+      message: 'Swap request accepted successfully',
+      swapRequest: {
+        id: swapRequest._id,
+        requester: swapRequest.requester,
+        recipient: swapRequest.recipient,
+        skillOffered: swapRequest.skillOffered,
+        skillRequested: swapRequest.skillRequested,
+        status: swapRequest.status,
+        message: swapRequest.message,
+        createdAt: swapRequest.createdAt,
+        updatedAt: swapRequest.updatedAt
+      }
+    };
+
+  } catch (error) {
+    console.error('Accept swap request service error:', error);
+    throw error;
+  }
+};
+
+/**
+ * Reject a swap request
+ * @param {string} requestId - ID of the swap request
+ * @param {string} userId - ID of the user attempting to reject
+ * @returns {Object} Updated swap request
+ */
+export const rejectSwapRequest = async (requestId, userId) => {
+  try {
+    // Find the swap request
+    const swapRequest = await SwapRequest.findById(requestId)
+      .populate([
+        { path: 'requester', select: 'name email location profilePhoto' },
+        { path: 'recipient', select: 'name email location profilePhoto' }
+      ]);
+
+    if (!swapRequest) {
+      throw new Error('Swap request not found');
+    }
+
+    // Check if user is the recipient (only recipient can reject)
+    if (swapRequest.recipient.toString() !== userId) {
+      throw new Error('Unauthorized to reject this request');
+    }
+
+    // Check if request is still pending
+    if (swapRequest.status !== 'pending') {
+      throw new Error('Cannot reject non-pending request');
+    }
+
+    // Update the status to rejected
+    swapRequest.status = 'rejected';
+    await swapRequest.save();
+
+    return {
+      success: true,
+      message: 'Swap request rejected successfully',
+      swapRequest: {
+        id: swapRequest._id,
+        requester: swapRequest.requester,
+        recipient: swapRequest.recipient,
+        skillOffered: swapRequest.skillOffered,
+        skillRequested: swapRequest.skillRequested,
+        status: swapRequest.status,
+        message: swapRequest.message,
+        createdAt: swapRequest.createdAt,
+        updatedAt: swapRequest.updatedAt
+      }
+    };
+
+  } catch (error) {
+    console.error('Reject swap request service error:', error);
+    throw error;
+  }
 }; 

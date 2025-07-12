@@ -1,10 +1,6 @@
 import { getSkillMatches as getSkillMatchesService } from '../service/userService.js';
 
-/**
- * Get skill matches for the authenticated user
- * @param {Object} req - Express request object (contains user data from middleware)
- * @param {Object} res - Express response object
- */
+
 export const getSkillMatches = async (req, res) => {
   try {
     // Get user data from middleware

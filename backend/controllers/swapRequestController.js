@@ -1,10 +1,12 @@
-import { createSwapRequest as createSwapRequestService, getMySwapRequests as getMySwapRequestsService } from '../service/swapRequestService.js';
+import { 
+  createSwapRequest as createSwapRequestService, 
+  getMySwapRequests as getMySwapRequestsService,
+  cancelSwapRequest as cancelSwapRequestService,
+  acceptSwapRequest as acceptSwapRequestService,
+  rejectSwapRequest as rejectSwapRequestService
+} from '../service/swapRequestService.js';
 
-/**
- * Create a new swap request
- * @param {Object} req - Express request object (contains user data from middleware)
- * @param {Object} res - Express response object
- */
+
 export const createSwapRequest = async (req, res) => {
   try {
     // Get authenticated user data from middleware
@@ -72,11 +74,6 @@ export const createSwapRequest = async (req, res) => {
   }
 };
 
-/**
- * Get all swap requests for the authenticated user
- * @param {Object} req - Express request object (contains user data from middleware)
- * @param {Object} res - Express response object
- */
 export const getMySwapRequests = async (req, res) => {
   try {
     const userId = req.userId;
@@ -113,6 +110,159 @@ export const getMySwapRequests = async (req, res) => {
   } catch (error) {
     console.error('Get swap requests controller error:', error);
     
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error',
+      error: process.env.NODE_ENV === 'development' ? error.message : {}
+    });
+  }
+};
+
+export const cancelSwapRequest = async (req, res) => {
+  try {
+    const userId = req.userId;
+    const { requestId } = req.params;
+
+    if (!requestId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Request ID is required'
+      });
+    }
+
+    // Call the service function
+    const result = await cancelSwapRequestService(requestId, userId);
+
+    // Send success response
+    res.status(200).json(result);
+
+  } catch (error) {
+    console.error('Cancel swap request controller error:', error);
+
+    // Handle specific errors
+    if (error.message === 'Swap request not found') {
+      return res.status(404).json({
+        success: false,
+        message: 'Swap request not found'
+      });
+    }
+
+    if (error.message === 'Unauthorized to cancel this request') {
+      return res.status(403).json({
+        success: false,
+        message: 'You can only cancel requests that you sent'
+      });
+    }
+
+    if (error.message === 'Cannot cancel non-pending request') {
+      return res.status(400).json({
+        success: false,
+        message: 'Can only cancel pending requests'
+      });
+    }
+
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error',
+      error: process.env.NODE_ENV === 'development' ? error.message : {}
+    });
+  }
+};
+
+export const acceptSwapRequest = async (req, res) => {
+  try {
+    const userId = req.userId;
+    const { requestId } = req.params;
+
+    if (!requestId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Request ID is required'
+      });
+    }
+
+    // Call the service function
+    const result = await acceptSwapRequestService(requestId, userId);
+
+    // Send success response
+    res.status(200).json(result);
+
+  } catch (error) {
+    console.error('Accept swap request controller error:', error);
+
+    // Handle specific errors
+    if (error.message === 'Swap request not found') {
+      return res.status(404).json({
+        success: false,
+        message: 'Swap request not found'
+      });
+    }
+
+    if (error.message === 'Unauthorized to accept this request') {
+      return res.status(403).json({
+        success: false,
+        message: 'You can only accept requests sent to you'
+      });
+    }
+
+    if (error.message === 'Cannot accept non-pending request') {
+      return res.status(400).json({
+        success: false,
+        message: 'Can only accept pending requests'
+      });
+    }
+
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error',
+      error: process.env.NODE_ENV === 'development' ? error.message : {}
+    });
+  }
+};
+
+export const rejectSwapRequest = async (req, res) => {
+  try {
+    const userId = req.userId;
+    const { requestId } = req.params;
+
+    if (!requestId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Request ID is required'
+      });
+    }
+
+    // Call the service function
+    const result = await rejectSwapRequestService(requestId, userId);
+
+    // Send success response
+    res.status(200).json(result);
+
+  } catch (error) {
+    console.error('Reject swap request controller error:', error);
+
+    // Handle specific errors
+    if (error.message === 'Swap request not found') {
+      return res.status(404).json({
+        success: false,
+        message: 'Swap request not found'
+      });
+    }
+
+    if (error.message === 'Unauthorized to reject this request') {
+      return res.status(403).json({
+        success: false,
+        message: 'You can only reject requests sent to you'
+      });
+    }
+
+    if (error.message === 'Cannot reject non-pending request') {
+      return res.status(400).json({
+        success: false,
+        message: 'Can only reject pending requests'
+      });
+    }
+
     res.status(500).json({
       success: false,
       message: 'Internal server error',
