@@ -13,6 +13,7 @@ import User from '../models/User.js';
  */
 export const createSwapRequest = async ({ requesterId, recipientId, skillOffered, skillRequested, message }) => {
   try {
+    console.log('\n\n\n----------------------\ncreateSwapRequest', requesterId, recipientId, skillOffered, skillRequested, message);
     // Find both users
     const [requester, recipient] = await Promise.all([
       User.findById(requesterId),
@@ -29,6 +30,8 @@ export const createSwapRequest = async ({ requesterId, recipientId, skillOffered
       throw new Error('Cannot send request to this user');
     }
 
+    console.log('requester: ', requester);
+    console.log('accepter: ',recipient);
     // Validate skills
     // Check if requester actually offers the skill they're offering
     if (!requester.skillsOffered.includes(skillOffered)) {

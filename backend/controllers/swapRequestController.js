@@ -1,13 +1,7 @@
 import { createSwapRequest as createSwapRequestService } from '../service/swapRequestService.js';
 
-/**
- * Create a new swap request
- * @param {Object} req - Express request object (contains user data from middleware)
- * @param {Object} res - Express response object
- */
 export const createSwapRequest = async (req, res) => {
   try {
-    // Get authenticated user data from middleware
     const requesterId = req.userId;
     const { recipientId, skillOffered, skillRequested, message } = req.body;
 
