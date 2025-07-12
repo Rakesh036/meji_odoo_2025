@@ -13,7 +13,7 @@ export const getSkillMatches = async (req, res) => {
     
     // Call the service function with the authenticated user's ID
     const result = await getSkillMatchesService(userId);
-    
+    console.log(result)
     // Send success response
     res.status(200).json(result);
     

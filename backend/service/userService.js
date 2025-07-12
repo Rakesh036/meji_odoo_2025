@@ -2,10 +2,20 @@ import User from "../models/User.js";
 
 export const getSkillMatches = async (userId) => {
   try {
+    console.log('Getting skill matches for userId:', userId);
+    
     const currentUser = await User.findById(userId);
     if (!currentUser) {
       throw new Error("User not found");
     }
+
+    console.log('Current user found:', {
+      id: currentUser._id,
+      name: currentUser.name,
+      skillsOffered: currentUser.skillsOffered,
+      skillsWanted: currentUser.skillsWanted,
+      availability: currentUser.availability
+    });
 
     // Get all public users except current user
     const allUsers = await User.find({
@@ -18,6 +28,17 @@ export const getSkillMatches = async (userId) => {
 
     allUsers.forEach((user) => {
       let matchCount = 0;
+
+      // Check if user has required fields
+      if (!user.availability || !currentUser.availability) {
+        console.log('Skipping user due to missing availability:', user._id);
+        return;
+      }
+
+      if (!user.skillsOffered || !user.skillsWanted || !currentUser.skillsOffered || !currentUser.skillsWanted) {
+        console.log('Skipping user due to missing skills:', user._id);
+        return;
+      }
 
       // 1. Availability match (check if any overlapping day is available)
       const availMatch = (
