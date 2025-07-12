@@ -4,6 +4,7 @@ import dotenv from 'dotenv';
 import connectDB from './config/database.js';
 import authRoutes from './routes/auth.js';
 import homeRoutes from './routes/home.js';
+import swapRequestRoutes from './routes/swapRequest.js';
 import { createUploadsDir } from './utils/fileUtils.js';
 
 // Load environment variables first
@@ -76,6 +77,7 @@ app.get('/api/test-uploads', (req, res) => {
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/home', homeRoutes);
+app.use('/api/swapRequest', swapRequestRoutes);
 
 // Health check route
 app.get('/api/health', (req, res) => {

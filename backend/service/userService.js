@@ -24,8 +24,6 @@ export const getSkillMatches = async (userId) => {
       isBanned: false,
     });
 
-    console.log('Found', allUsers.length, 'other users');
-
     const data = [];
 
     allUsers.forEach((user) => {
@@ -75,8 +73,6 @@ export const getSkillMatches = async (userId) => {
         });
       }
     });
-
-    console.log('Processed matches:', data.length);
 
     // Sort by match count (highest first)
     data.sort((a, b) => b.matchCount - a.matchCount);
