@@ -86,7 +86,7 @@ const Navbar = () => {
         <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 xl:px-8">
           <div className="flex justify-between h-14 sm:h-16">
             <div className="flex items-center">
-              <h1 className="text-xl sm:text-2xl font-bold text-[#493628]">Meji Odoo</h1>
+              <h1 className="text-xl sm:text-2xl font-bold text-[#493628]">Connexus</h1>
             </div>
             <div className="flex items-center space-x-2 sm:space-x-4">
               <Link
@@ -114,7 +114,7 @@ const Navbar = () => {
         <div className="flex justify-between h-14 sm:h-16">
           <div className="flex items-center">
             <Link to="/home" className="flex-shrink-0 flex items-center">
-              <h1 className="text-xl sm:text-2xl font-bold text-[#493628]">Meji Odoo</h1>
+              <h1 className="text-xl sm:text-2xl font-bold text-[#493628]">Connexus</h1>
             </Link>
           </div>
 

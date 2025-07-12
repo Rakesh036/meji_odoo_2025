@@ -16,3 +16,18 @@ export const createSwapRequest = async (swapRequestData) => {
     throw error.response?.data || error.message;
   }
 };
+
+export const fetchMySwapRequests = async () => {
+  try {
+    const token = localStorage.getItem('token');
+    const response = await axiosInstance.get('/api/swapRequest/my-requests', {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    });
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || error.message;
+  }
+};

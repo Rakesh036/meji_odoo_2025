@@ -1,85 +1,88 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { fetchMySwapRequests } from '../apis/apiCalls';
 
 const SwapRequests = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [requests, setRequests] = useState({
+    pending: [],
+    accepted: [],
+    rejected: [],
+    cancelled: []
+  });
+  const [summary, setSummary] = useState({
+    total: 0,
+    pending: 0,
+    accepted: 0,
+    rejected: 0,
+    cancelled: 0
+  });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  // Dummy data for swap requests
-  const dummyRequests = [
-    {
-      id: 1,
-      userId: 'user1',
-      name: 'John Doe',
-      profilePhoto: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face',
-      skillRequested: 'React Development',
-      skillOffered: 'JavaScript Programming',
-      status: 'pending',
-      requestedAt: '2024-01-15T10:30:00Z',
-      rating: 4.2
-    },
-    {
-      id: 2,
-      userId: 'user2',
-      name: 'Sarah Wilson',
-      profilePhoto: 'https://images.unsplash.com/photo-1494790108755-2616b612b786?w=150&h=150&fit=crop&crop=face',
-      skillRequested: 'Machine Learning',
-      skillOffered: 'Python Programming',
-      status: 'accepted',
-      requestedAt: '2024-01-14T14:20:00Z',
-      rating: 4.8
-    },
-    {
-      id: 3,
-      userId: 'user3',
-      name: 'Mike Johnson',
-      profilePhoto: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face',
-      skillRequested: 'Microservices Architecture',
-      skillOffered: 'Java Development',
-      status: 'rejected',
-      requestedAt: '2024-01-13T09:15:00Z',
-      rating: 3.7
-    },
-    {
-      id: 4,
-      userId: 'user4',
-      name: 'Emily Chen',
-      profilePhoto: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&h=150&fit=crop&crop=face',
-      skillRequested: 'UI/UX Design',
-      skillOffered: 'Adobe Creative Suite',
-      status: 'pending',
-      requestedAt: '2024-01-12T16:45:00Z',
-      rating: 4.5
-    },
-    {
-      id: 5,
-      userId: 'user5',
-      name: 'David Brown',
-      profilePhoto: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&h=150&fit=crop&crop=face',
-      skillRequested: 'Kubernetes',
-      skillOffered: 'Docker Containerization',
-      status: 'accepted',
-      requestedAt: '2024-01-11T11:30:00Z',
-      rating: 4.9
-    },
-    {
-      id: 6,
-      userId: 'user6',
-      name: 'Lisa Garcia',
-      profilePhoto: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&h=150&fit=crop&crop=face',
-      skillRequested: 'Data Analysis',
-      skillOffered: 'SQL Database Management',
-      status: 'pending',
-      requestedAt: '2024-01-10T13:20:00Z',
-      rating: 4.1
+  useEffect(() => {
+    fetchRequests();
+  }, []);
+
+  const fetchRequests = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await fetchMySwapRequests();
+      
+      if (response.success) {
+        console.log('Full response data:', response.data);
+        
+        // Get current user ID for debugging
+        const userData = localStorage.getItem('user');
+        const currentUser = userData ? JSON.parse(userData) : null;
+        console.log('Current user:', currentUser);
+        
+        setRequests(response.data.requests);
+        setSummary(response.data.summary);
+      } else {
+        setError('Failed to fetch requests');
+      }
+    } catch (error) {
+      console.error('Error fetching requests:', error);
+      setError(error.message || 'Failed to fetch requests');
+    } finally {
+      setLoading(false);
     }
-  ];
+  };
+
+  // Combine all requests into a single array for filtering
+  const getAllRequests = () => {
+    const allRequests = [];
+    
+    // Add requestType to each request for identification
+    Object.keys(requests).forEach(status => {
+      requests[status].forEach(request => {
+        allRequests.push({
+          ...request,
+          status,
+          requestType: request.requestType || 'unknown'
+        });
+      });
+    });
+    
+    return allRequests;
+  };
 
   // Filter requests based on search term and status
-  const filteredRequests = dummyRequests.filter(request => {
-    const matchesSearch = request.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         request.skillRequested.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         request.skillOffered.toLowerCase().includes(searchTerm.toLowerCase());
+  const filteredRequests = getAllRequests().filter(request => {
+    const requesterName = request.requester?.name || '';
+    const recipientName = request.recipient?.name || '';
+    const skillRequested = request.skillRequested || '';
+    const skillOffered = request.skillOffered || '';
+    
+    const matchesSearch = 
+      requesterName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      recipientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      skillRequested.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      skillOffered.toLowerCase().includes(searchTerm.toLowerCase());
+    
     const matchesStatus = statusFilter === 'all' || request.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
@@ -92,6 +95,8 @@ const SwapRequests = () => {
         return 'bg-green-100 text-green-800 border-green-200';
       case 'rejected':
         return 'bg-red-100 text-red-800 border-red-200';
+      case 'cancelled':
+        return 'bg-gray-100 text-gray-800 border-gray-200';
       default:
         return 'bg-gray-100 text-gray-800 border-gray-200';
     }
@@ -105,6 +110,8 @@ const SwapRequests = () => {
         return 'Accepted';
       case 'rejected':
         return 'Rejected';
+      case 'cancelled':
+        return 'Cancelled';
       default:
         return status;
     }
@@ -162,22 +169,129 @@ const SwapRequests = () => {
     return stars;
   };
 
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 py-4 sm:py-6 lg:py-8">
+        <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 xl:px-8">
+          <div className="flex items-center justify-center h-48 sm:h-64">
+            <div className="animate-spin rounded-full h-8 w-8 sm:h-12 sm:w-12 border-b-2 border-[#AB886D]"></div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50 py-4 sm:py-6 lg:py-8">
+        <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 xl:px-8">
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4 sm:p-6">
+            <div className="flex">
+              <div className="flex-shrink-0">
+                <svg className="h-4 w-4 sm:h-5 sm:w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                </svg>
+              </div>
+              <div className="ml-3">
+                <h3 className="text-sm font-medium text-red-800">Error loading requests</h3>
+                <p className="mt-2 text-xs sm:text-sm text-red-700">{error}</p>
+                <button
+                  onClick={fetchRequests}
+                  className="mt-3 text-xs sm:text-sm font-medium text-red-800 hover:text-red-900 underline"
+                >
+                  Try again
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gray-50 py-4 sm:py-6 lg:py-8">
+      <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 xl:px-8">
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-[#493628] mb-2">Swap Requests</h1>
-          <p className="text-gray-600">Manage your skill share requests and track their status</p>
+        <div className="mb-6 sm:mb-8">
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-[#493628] mb-2">Swap Requests</h1>
+          <p className="text-sm sm:text-base text-gray-600">Manage your skill share requests and track their status</p>
+        </div>
+
+        {/* Summary Cards */}
+        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6">
+          <div className="bg-white rounded-lg shadow-sm p-3 sm:p-4">
+            <div className="flex items-center">
+              <div className="flex-shrink-0">
+                <div className="w-6 h-6 sm:w-8 sm:h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                  <svg className="w-3 h-3 sm:w-4 sm:h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                  </svg>
+                </div>
+              </div>
+              <div className="ml-2 sm:ml-4">
+                <p className="text-xs sm:text-sm font-medium text-gray-500">Total</p>
+                <p className="text-lg sm:text-xl lg:text-2xl font-semibold text-gray-900">{summary.total}</p>
+              </div>
+            </div>
+          </div>
+          
+          <div className="bg-white rounded-lg shadow-sm p-3 sm:p-4">
+            <div className="flex items-center">
+              <div className="flex-shrink-0">
+                <div className="w-6 h-6 sm:w-8 sm:h-8 bg-yellow-100 rounded-full flex items-center justify-center">
+                  <svg className="w-3 h-3 sm:w-4 sm:h-4 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+              </div>
+              <div className="ml-2 sm:ml-4">
+                <p className="text-xs sm:text-sm font-medium text-gray-500">Pending</p>
+                <p className="text-lg sm:text-xl lg:text-2xl font-semibold text-gray-900">{summary.pending}</p>
+              </div>
+            </div>
+          </div>
+          
+          <div className="bg-white rounded-lg shadow-sm p-3 sm:p-4">
+            <div className="flex items-center">
+              <div className="flex-shrink-0">
+                <div className="w-6 h-6 sm:w-8 sm:h-8 bg-green-100 rounded-full flex items-center justify-center">
+                  <svg className="w-3 h-3 sm:w-4 sm:h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                </div>
+              </div>
+              <div className="ml-2 sm:ml-4">
+                <p className="text-xs sm:text-sm font-medium text-gray-500">Accepted</p>
+                <p className="text-lg sm:text-xl lg:text-2xl font-semibold text-gray-900">{summary.accepted}</p>
+              </div>
+            </div>
+          </div>
+          
+          <div className="bg-white rounded-lg shadow-sm p-3 sm:p-4">
+            <div className="flex items-center">
+              <div className="flex-shrink-0">
+                <div className="w-6 h-6 sm:w-8 sm:h-8 bg-red-100 rounded-full flex items-center justify-center">
+                  <svg className="w-3 h-3 sm:w-4 sm:h-4 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </div>
+              </div>
+              <div className="ml-2 sm:ml-4">
+                <p className="text-xs sm:text-sm font-medium text-gray-500">Rejected</p>
+                <p className="text-lg sm:text-xl lg:text-2xl font-semibold text-gray-900">{summary.rejected}</p>
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Search and Filter Controls */}
-        <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
-          <div className="flex flex-col sm:flex-row gap-4">
+        <div className="bg-white rounded-lg shadow-sm p-4 sm:p-6 mb-6">
+          <div className="flex flex-col lg:flex-row gap-4">
             {/* Search Input */}
             <div className="flex-1">
               <label htmlFor="search" className="block text-sm font-medium text-gray-700 mb-2">
-                Search Users
+                Search Requests
               </label>
               <input
                 type="text"
@@ -185,12 +299,12 @@ const SwapRequests = () => {
                 placeholder="Search by name or skills..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#AB886D] focus:border-[#AB886D] transition-colors"
+                className="w-full px-3 sm:px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#AB886D] focus:border-[#AB886D] transition-colors text-sm sm:text-base"
               />
             </div>
 
             {/* Status Filter */}
-            <div className="sm:w-48">
+            <div className="w-full lg:w-48">
               <label htmlFor="status" className="block text-sm font-medium text-gray-700 mb-2">
                 Filter by Status
               </label>
@@ -198,12 +312,13 @@ const SwapRequests = () => {
                 id="status"
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#AB886D] focus:border-[#AB886D] transition-colors"
+                className="w-full px-3 sm:px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#AB886D] focus:border-[#AB886D] transition-colors text-sm sm:text-base"
               >
                 <option value="all">All Status</option>
                 <option value="pending">Pending</option>
                 <option value="accepted">Accepted</option>
                 <option value="rejected">Rejected</option>
+                <option value="cancelled">Cancelled</option>
               </select>
             </div>
           </div>
@@ -211,103 +326,161 @@ const SwapRequests = () => {
 
         {/* Results Count */}
         <div className="mb-4">
-          <p className="text-gray-600">
-            Showing {filteredRequests.length} of {dummyRequests.length} requests
+          <p className="text-sm sm:text-base text-gray-600">
+            Showing {filteredRequests.length} of {summary.total} requests
           </p>
         </div>
 
         {/* Requests List */}
-        <div className="space-y-4">
+        <div className="space-y-3 sm:space-y-4">
           {filteredRequests.length === 0 ? (
-            <div className="bg-white rounded-lg shadow-sm p-8 text-center">
+            <div className="bg-white rounded-lg shadow-sm p-6 sm:p-8 text-center">
               <div className="text-gray-400 mb-4">
-                <svg className="mx-auto h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <svg className="mx-auto h-8 w-8 sm:h-12 sm:w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                 </svg>
               </div>
-              <h3 className="text-lg font-medium text-gray-900 mb-2">No requests found</h3>
-              <p className="text-gray-500">Try adjusting your search or filter criteria</p>
+              <h3 className="text-base sm:text-lg font-medium text-gray-900 mb-2">No requests found</h3>
+              <p className="text-sm sm:text-base text-gray-500">Try adjusting your search or filter criteria</p>
             </div>
           ) : (
-            filteredRequests.map((request) => (
-              <div key={request.id} className="bg-white rounded-lg shadow-sm p-6 hover:shadow-md transition-shadow">
-                <div className="flex items-start justify-between">
-                  {/* User Info */}
-                  <div className="flex items-start space-x-4 flex-1">
-                    {/* Profile Photo and Rating */}
-                    <div className="flex-shrink-0">
-                      <img
-                        src={request.profilePhoto}
-                        alt={request.name}
-                        className="w-16 h-16 rounded-full object-cover border-2 border-gray-200"
-                        onError={(e) => {
-                          e.target.style.display = 'none';
-                          e.target.nextSibling.style.display = 'flex';
-                        }}
-                      />
-                      <div className="w-16 h-16 rounded-full bg-[#AB886D] flex items-center justify-center text-white font-medium text-lg" style={{ display: 'none' }}>
-                        {request.name.charAt(0).toUpperCase()}
-                      </div>
-                      
-                      {/* Rating */}
-                      <div className="mt-2 text-center">
-                        <div className="flex justify-center items-center space-x-1">
-                          {renderStars(request.rating)}
+            filteredRequests.map((request) => {
+              // Get current user ID to determine which user is "other"
+              const userData = localStorage.getItem('user');
+              const currentUserId = userData ? JSON.parse(userData)._id : null;
+              
+              // Determine if this is a received request based on user ID comparison
+              const isReceived = request.requester._id !== currentUserId;
+              
+              // Determine which user is the "other" user (not the current user)
+              let otherUser, currentUser;
+              if (request.requester._id === currentUserId) {
+                // You are the requester (you sent the request)
+                otherUser = request.recipient;
+                currentUser = request.requester;
+              } else {
+                // You are the recipient (you received the request)
+                otherUser = request.requester;
+                currentUser = request.recipient;
+              }
+              
+              // Debug logging
+              console.log('Request debug:', {
+                requestId: request._id,
+                requestType: request.requestType,
+                isReceived,
+                currentUserId: currentUserId,
+                requesterId: request.requester._id,
+                recipientId: request.recipient._id,
+                requesterName: request.requester?.name,
+                recipientName: request.recipient?.name,
+                otherUserName: otherUser?.name,
+                currentUserName: currentUser?.name,
+                isCurrentUserRequester: request.requester._id === currentUserId
+              });
+              
+              // Safety check - if otherUser is undefined, skip this request
+              if (!otherUser) {
+                console.error('otherUser is undefined for request:', request);
+                return null;
+              }
+              
+              return (
+                <div key={request._id} className="bg-white rounded-lg shadow-sm p-4 sm:p-6 hover:shadow-md transition-shadow">
+                  <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-4">
+                    {/* User Info */}
+                    <div className="flex items-start space-x-3 sm:space-x-4 flex-1">
+                      {/* Profile Photo */}
+                      <div className="flex-shrink-0">
+                        {otherUser.profilePhoto ? (
+                          <img
+                            src={otherUser.profilePhoto}
+                            alt={otherUser.name}
+                            className="w-12 h-12 sm:w-16 sm:h-16 rounded-full object-cover border-2 border-gray-200"
+                            onError={(e) => {
+                              e.target.style.display = 'none';
+                              e.target.nextSibling.style.display = 'flex';
+                            }}
+                          />
+                        ) : null}
+                        <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-[#AB886D] flex items-center justify-center text-white font-medium text-sm sm:text-lg" style={{ display: otherUser.profilePhoto ? 'none' : 'flex' }}>
+                          {otherUser.name.charAt(0).toUpperCase()}
                         </div>
-                        <p className="text-xs text-gray-600 mt-1">
-                          {request.rating}/5
+                      </div>
+
+                      {/* User Details */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-2">
+                          <h3 className="text-base sm:text-lg font-semibold text-gray-900 truncate">
+                            {otherUser.name}
+                          </h3>
+                          <div className="flex items-center gap-2">
+                            <Link
+                              to={`/profile/${otherUser._id}`}
+                              className="text-[#AB886D] hover:text-[#493628] text-xs sm:text-sm font-medium transition-colors"
+                            >
+                              View Profile
+                            </Link>
+                            <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                              isReceived ? 'bg-blue-100 text-blue-800' : 'bg-purple-100 text-purple-800'
+                            }`}>
+                              {isReceived ? 'Received' : 'Sent'}
+                            </span>
+                          </div>
+                        </div>
+                        
+                        {/* Location */}
+                        {otherUser.location && (
+                          <p className="text-xs sm:text-sm text-gray-600 mb-2">
+                            📍 {otherUser.location}
+                          </p>
+                        )}
+                        
+                        {/* Skills Exchange */}
+                        <div className="mb-2">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
+                            <div>
+                              <p className="text-xs sm:text-sm text-gray-600 mb-1">Skill Requested:</p>
+                              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 border border-red-200">
+                                {request.skillRequested}
+                              </span>
+                            </div>
+                            <div>
+                              <p className="text-xs sm:text-sm text-gray-600 mb-1">Skill Offered:</p>
+                              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 border border-green-200">
+                                {request.skillOffered}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Message */}
+                        {request.message && (
+                          <div className="mb-2">
+                            <p className="text-xs sm:text-sm text-gray-600 mb-1">Message:</p>
+                            <p className="text-xs sm:text-sm text-gray-800 bg-gray-50 p-2 rounded border">
+                              "{request.message}"
+                            </p>
+                          </div>
+                        )}
+
+                        {/* Request Date */}
+                        <p className="text-xs text-gray-500">
+                          {isReceived ? 'Received' : 'Sent'}: {formatDate(request.createdAt)}
                         </p>
                       </div>
                     </div>
 
-                    {/* User Details */}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center space-x-2 mb-2">
-                        <h3 className="text-lg font-semibold text-gray-900 truncate">
-                          {request.name}
-                        </h3>
-                        <Link
-                          to={`/profile/${request.userId}`}
-                          className="text-[#AB886D] hover:text-[#493628] text-sm font-medium transition-colors"
-                        >
-                          View Profile
-                        </Link>
-                      </div>
-                      
-                      {/* Skills Exchange */}
-                      <div className="mb-2">
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                          <div>
-                            <p className="text-sm text-gray-600 mb-1">Skill Requested:</p>
-                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 border border-red-200">
-                              {request.skillRequested}
-                            </span>
-                          </div>
-                          <div>
-                            <p className="text-sm text-gray-600 mb-1">Skill Offered:</p>
-                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 border border-green-200">
-                              {request.skillOffered}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Request Date */}
-                      <p className="text-xs text-gray-500">
-                        Requested: {formatDate(request.requestedAt)}
-                      </p>
+                    {/* Status */}
+                    <div className="flex-shrink-0 lg:ml-4">
+                      <span className={`inline-flex items-center px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-medium border ${getStatusColor(request.status)}`}>
+                        {getStatusText(request.status)}
+                      </span>
                     </div>
                   </div>
-
-                  {/* Status */}
-                  <div className="flex-shrink-0 ml-4">
-                    <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium border ${getStatusColor(request.status)}`}>
-                      {getStatusText(request.status)}
-                    </span>
-                  </div>
                 </div>
-              </div>
-            ))
+              );
+            }).filter(Boolean) // Remove any null requests
           )}
         </div>
       </div>
