@@ -1,7 +1,13 @@
-import { createSwapRequest as createSwapRequestService } from '../service/swapRequestService.js';
+import { createSwapRequest as createSwapRequestService, getMySwapRequests as getMySwapRequestsService } from '../service/swapRequestService.js';
 
+/**
+ * Create a new swap request
+ * @param {Object} req - Express request object (contains user data from middleware)
+ * @param {Object} res - Express response object
+ */
 export const createSwapRequest = async (req, res) => {
   try {
+    // Get authenticated user data from middleware
     const requesterId = req.userId;
     const { recipientId, skillOffered, skillRequested, message } = req.body;
 
@@ -58,6 +64,55 @@ export const createSwapRequest = async (req, res) => {
       });
     }
 
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error',
+      error: process.env.NODE_ENV === 'development' ? error.message : {}
+    });
+  }
+};
+
+/**
+ * Get all swap requests for the authenticated user
+ * @param {Object} req - Express request object (contains user data from middleware)
+ * @param {Object} res - Express response object
+ */
+export const getMySwapRequests = async (req, res) => {
+  try {
+    const userId = req.userId;
+    const { 
+      page = 1, 
+      limit = 10, 
+      status, 
+      type = 'all' // 'sent', 'received', or 'all'
+    } = req.query;
+
+    // Validate pagination parameters
+    const pageNum = parseInt(page);
+    const limitNum = parseInt(limit);
+    
+    if (pageNum < 1 || limitNum < 1 || limitNum > 50) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid pagination parameters. Page must be >= 1, limit must be between 1-50'
+      });
+    }
+
+    // Call the service function
+    const result = await getMySwapRequestsService({
+      userId,
+      page: pageNum,
+      limit: limitNum,
+      status,
+      type
+    });
+
+    // Send success response
+    res.status(200).json(result);
+
+  } catch (error) {
+    console.error('Get swap requests controller error:', error);
+    
     res.status(500).json({
       success: false,
       message: 'Internal server error',

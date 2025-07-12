@@ -30,8 +30,6 @@ export const createSwapRequest = async ({ requesterId, recipientId, skillOffered
       throw new Error('Cannot send request to this user');
     }
 
-    console.log('requester: ', requester);
-    console.log('accepter: ',recipient);
     // Validate skills
     // Check if requester actually offers the skill they're offering
     if (!requester.skillsOffered.includes(skillOffered)) {
@@ -91,6 +89,107 @@ export const createSwapRequest = async ({ requesterId, recipientId, skillOffered
 
   } catch (error) {
     console.error('Swap request service error:', error);
+    throw error;
+  }
+};
+
+/**
+ * Get all swap requests for a user with pagination and filtering
+ * @param {Object} params - Parameters for fetching swap requests
+ * @param {string} params.userId - ID of the user
+ * @param {number} params.page - Page number (default: 1)
+ * @param {number} params.limit - Items per page (default: 10)
+ * @param {string} params.status - Filter by status (optional)
+ * @param {string} params.type - Filter by type: 'sent', 'received', or 'all' (default: 'all')
+ * @returns {Object} Paginated swap requests organized by status
+ */
+export const getMySwapRequests = async ({ userId, page = 1, limit = 10, status, type = 'all' }) => {
+  try {
+    // Build query based on type
+    let query = {};
+    
+    if (type === 'sent') {
+      query.requester = userId;
+    } else if (type === 'received') {
+      query.recipient = userId;
+    } else {
+      // 'all' - get both sent and received
+      query.$or = [
+        { requester: userId },
+        { recipient: userId }
+      ];
+    }
+
+    // Add status filter if provided
+    if (status && ['pending', 'accepted', 'rejected', 'cancelled'].includes(status)) {
+      query.status = status;
+    }
+
+    // Calculate skip value for pagination
+    const skip = (page - 1) * limit;
+
+    // Get total count for pagination
+    const totalCount = await SwapRequest.countDocuments(query);
+
+    // Get paginated results with populated user details
+    const swapRequests = await SwapRequest.find(query)
+      .populate([
+        { path: 'requester', select: 'name email location profilePhoto' },
+        { path: 'recipient', select: 'name email location profilePhoto' }
+      ])
+      .sort({ createdAt: -1 }) // Most recent first
+      .skip(skip)
+      .limit(limit);
+
+    // Organize by status
+    const organized = {
+      pending: [],
+      accepted: [],
+      rejected: [],
+      cancelled: []
+    };
+
+    // Add request type (sent/received) to each request
+    const requestsWithType = swapRequests.map(request => {
+      const requestObj = request.toObject();
+      requestObj.requestType = request.requester.toString() === userId ? 'sent' : 'received';
+      return requestObj;
+    });
+
+    // Categorize by status
+    requestsWithType.forEach(request => {
+      organized[request.status].push(request);
+    });
+
+    // Calculate pagination info
+    const totalPages = Math.ceil(totalCount / limit);
+    const hasNextPage = page < totalPages;
+    const hasPrevPage = page > 1;
+
+    return {
+      success: true,
+      data: {
+        requests: organized,
+        summary: {
+          total: totalCount,
+          pending: organized.pending.length,
+          accepted: organized.accepted.length,
+          rejected: organized.rejected.length,
+          cancelled: organized.cancelled.length
+        }
+      },
+      pagination: {
+        currentPage: page,
+        totalPages,
+        totalItems: totalCount,
+        itemsPerPage: limit,
+        hasNextPage,
+        hasPrevPage
+      }
+    };
+
+  } catch (error) {
+    console.error('Get swap requests service error:', error);
     throw error;
   }
 }; 
